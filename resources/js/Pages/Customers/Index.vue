@@ -54,14 +54,19 @@
               </td>
               <td class="px-5 py-4 font-semibold text-slate-700">{{ c.orders_count || 0 }} Kali</td>
               <td class="px-5 py-4 text-right space-x-2">
-                <button @click="openDepositModal(c)" class="inline-flex items-center gap-1 text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1.5 rounded-lg hover:bg-emerald-100 transition-colors">
-                  <Wallet class="w-3.5 h-3.5" />
-                  <span>Top-Up Saldo</span>
-                </button>
-                <button @click="openEditModal(c)" class="inline-flex items-center gap-1 text-xs font-bold text-sky-600 bg-sky-50 px-2.5 py-1.5 rounded-lg hover:bg-sky-100 transition-colors">
-                  <Edit class="w-3.5 h-3.5" />
-                  <span>Edit</span>
-                </button>
+                <div class="flex justify-end items-center gap-1.5">
+                  <button @click="openDepositModal(c)" class="inline-flex items-center gap-1 text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1.5 rounded-lg hover:bg-emerald-100 transition-colors">
+                    <Wallet class="w-3.5 h-3.5" />
+                    <span>Top-Up Saldo</span>
+                  </button>
+                  <button @click="openEditModal(c)" class="inline-flex items-center gap-1 text-xs font-bold text-sky-600 bg-sky-50 px-2.5 py-1.5 rounded-lg hover:bg-sky-100 transition-colors">
+                    <Edit class="w-3.5 h-3.5" />
+                    <span>Edit</span>
+                  </button>
+                  <button @click="deleteItem(c)" class="inline-flex items-center gap-1 text-xs font-bold text-rose-600 bg-rose-50 px-2.5 py-1.5 rounded-lg hover:bg-rose-100 transition-colors">
+                    <Trash2 class="w-3.5 h-3.5" />
+                  </button>
+                </div>
               </td>
             </tr>
           </tbody>
@@ -124,6 +129,17 @@
         </form>
       </div>
     </div>
+
+    <!-- Custom Confirmation Modal -->
+    <ConfirmModal 
+      :show="showDeleteModal"
+      title="Hapus Pelanggan"
+      :message="`Apakah Anda yakin ingin menghapus pelanggan ${itemToDelete?.name}?\n\nAksi ini tidak dapat dibatalkan.`"
+      confirmText="Ya, Hapus"
+      type="danger"
+      @confirm="executeDelete"
+      @cancel="showDeleteModal = false"
+    />
   </AppLayout>
 </template>
 
@@ -131,7 +147,8 @@
 import { ref } from 'vue';
 import { useForm, router } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
-import { Plus, Search, MessageCircle, Wallet, Edit } from 'lucide-vue-next';
+import ConfirmModal from '@/Components/ConfirmModal.vue';
+import { Plus, Search, MessageCircle, Wallet, Edit, Trash2 } from 'lucide-vue-next';
 
 const props = defineProps({
   customers: Object,
@@ -141,8 +158,10 @@ const props = defineProps({
 const search = ref(props.filters.search || '');
 const showCustomerModal = ref(false);
 const showDepositModal = ref(false);
+const showDeleteModal = ref(false);
 const editingCustomer = ref(null);
 const activeCust = ref(null);
+const itemToDelete = ref(null);
 
 const customerForm = useForm({
   name: '',
@@ -206,6 +225,19 @@ function submitDeposit() {
   depositForm.post(`/customers/${activeCust.value.id}/deposit`, {
     onSuccess: () => { showDepositModal.value = false; }
   });
+}
+
+function deleteItem(c) {
+  itemToDelete.value = c;
+  showDeleteModal.value = true;
+}
+
+function executeDelete() {
+  if (itemToDelete.value) {
+    router.delete(`/customers/${itemToDelete.value.id}`);
+    showDeleteModal.value = false;
+    itemToDelete.value = null;
+  }
 }
 </script>
 

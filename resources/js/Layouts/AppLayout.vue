@@ -207,19 +207,31 @@
         </div>
       </header>
 
-      <!-- Toast Alerts -->
-      <div v-if="$page.props.flash?.success" class="m-4 mb-0 p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs sm:text-sm flex items-center justify-between shadow-xs">
-        <div class="flex items-center gap-2">
-          <CheckCircle2 class="w-5 h-5 text-emerald-600 shrink-0" />
-          <span>{{ $page.props.flash.success }}</span>
-        </div>
-      </div>
+      <!-- Floating Toast Alerts -->
+      <div class="fixed top-20 right-4 sm:right-6 z-50 flex flex-col gap-2 pointer-events-none max-w-sm w-full">
+        <!-- Success Toast -->
+        <transition enter-active-class="transition duration-300 ease-out" enter-from-class="transform translate-x-10 opacity-0" enter-to-class="transform translate-x-0 opacity-100" leave-active-class="transition duration-200 ease-in" leave-from-class="transform translate-x-0 opacity-100" leave-to-class="transform translate-x-10 opacity-0">
+          <div v-if="showSuccessToast && $page.props.flash?.success" class="pointer-events-auto p-4 rounded-2xl bg-emerald-50 border border-emerald-200 shadow-xl flex items-start gap-3">
+            <CheckCircle2 class="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+            <div class="flex-1">
+              <h4 class="text-sm font-bold text-emerald-900">Berhasil!</h4>
+              <p class="text-xs text-emerald-700 mt-0.5 leading-relaxed">{{ $page.props.flash.success }}</p>
+            </div>
+            <button @click="showSuccessToast = false" class="text-emerald-400 hover:text-emerald-600">✕</button>
+          </div>
+        </transition>
 
-      <div v-if="$page.props.flash?.error" class="m-4 mb-0 p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs sm:text-sm flex items-center justify-between shadow-xs">
-        <div class="flex items-center gap-2">
-          <AlertCircle class="w-5 h-5 text-rose-600 shrink-0" />
-          <span>{{ $page.props.flash.error }}</span>
-        </div>
+        <!-- Error Toast -->
+        <transition enter-active-class="transition duration-300 ease-out" enter-from-class="transform translate-x-10 opacity-0" enter-to-class="transform translate-x-0 opacity-100" leave-active-class="transition duration-200 ease-in" leave-from-class="transform translate-x-0 opacity-100" leave-to-class="transform translate-x-10 opacity-0">
+          <div v-if="showErrorToast && $page.props.flash?.error" class="pointer-events-auto p-4 rounded-2xl bg-rose-50 border border-rose-200 shadow-xl flex items-start gap-3">
+            <AlertCircle class="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+            <div class="flex-1">
+              <h4 class="text-sm font-bold text-rose-900">Oops, Gagal!</h4>
+              <p class="text-xs text-rose-700 mt-0.5 leading-relaxed">{{ $page.props.flash.error }}</p>
+            </div>
+            <button @click="showErrorToast = false" class="text-rose-400 hover:text-rose-600">✕</button>
+          </div>
+        </transition>
       </div>
 
       <!-- Main Slot -->
@@ -231,7 +243,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { Link, usePage } from '@inertiajs/vue3';
 import { 
   LayoutDashboard, 
@@ -266,6 +278,29 @@ defineProps({
 const isSidebarOpen = ref(false);
 const page = usePage();
 const user = computed(() => page.props.auth?.user);
+
+const showSuccessToast = ref(false);
+const showErrorToast = ref(false);
+let toastTimeout = null;
+
+watch(() => page.props.flash, (flash) => {
+  if (flash?.success) {
+    showSuccessToast.value = true;
+    showErrorToast.value = false;
+  }
+  if (flash?.error) {
+    showErrorToast.value = true;
+    showSuccessToast.value = false;
+  }
+  
+  if (flash?.success || flash?.error) {
+    if (toastTimeout) clearTimeout(toastTimeout);
+    toastTimeout = setTimeout(() => {
+      showSuccessToast.value = false;
+      showErrorToast.value = false;
+    }, 5000);
+  }
+}, { deep: true, immediate: true });
 
 const userInitial = computed(() => {
   return (user.value?.name || 'A').charAt(0).toUpperCase();

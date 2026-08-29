@@ -222,12 +222,25 @@
         </button>
       </div>
     </div>
+
+    <!-- Custom Confirmation Modal -->
+    <ConfirmModal 
+      :show="showResetModal"
+      title="Peringatan Bahaya!"
+      message="Apakah Anda YAKIN ingin MENGHAPUS BERSIH seluruh data Transaksi, Pengeluaran, Shift Kasir, dan Riwayat Keuangan?&#10;&#10;Aksi ini TIDAK BISA dibatalkan."
+      confirmText="Ya, Hapus Semua"
+      type="danger"
+      @confirm="executeReset"
+      @cancel="showResetModal = false"
+    />
   </AppLayout>
 </template>
 
 <script setup>
+import { ref } from 'vue';
 import { useForm, router } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import ConfirmModal from '@/Components/ConfirmModal.vue';
 import { 
   Store, Printer, Sparkles, QrCode, CheckCircle2, AlertTriangle, Trash2 
 } from 'lucide-vue-next';
@@ -238,6 +251,8 @@ const props = defineProps({
     default: () => ({})
   }
 });
+
+const showResetModal = ref(false);
 
 const form = useForm({
   name: props.outlet?.name || 'Laundry Express',
@@ -255,9 +270,12 @@ function submit() {
 }
 
 function confirmResetTransactions() {
-  if (confirm('PERINGATAN!\n\nApakah Anda YAKIN ingin MENGHAPUS BERSIH seluruh data Transaksi, Pengeluaran, Shift Kasir, dan Riwayat Keuangan?\n\nAksi ini TIDAK BISA dibatalkan.')) {
-    router.post('/outlet/reset-transactions');
-  }
+  showResetModal.value = true;
+}
+
+function executeReset() {
+  showResetModal.value = false;
+  router.post('/outlet/reset-transactions');
 }
 </script>
 

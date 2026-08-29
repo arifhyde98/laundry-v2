@@ -46,10 +46,15 @@
                 </span>
               </td>
               <td class="px-5 py-4 text-right">
-                <button @click="openPencilModal(s)" class="inline-flex items-center gap-1 text-xs font-bold text-sky-600 bg-sky-50 px-2.5 py-1.5 rounded-lg hover:bg-sky-100 transition-colors">
-                  <Pencil class="w-3.5 h-3.5" />
-                  <span>Pencil</span>
-                </button>
+                <div class="flex justify-end items-center gap-1.5">
+                  <button @click="openPencilModal(s)" class="inline-flex items-center gap-1 text-xs font-bold text-sky-600 bg-sky-50 px-2.5 py-1.5 rounded-lg hover:bg-sky-100 transition-colors">
+                    <Pencil class="w-3.5 h-3.5" />
+                    <span>Edit</span>
+                  </button>
+                  <button @click="deleteItem(s)" class="inline-flex items-center gap-1 text-xs font-bold text-rose-600 bg-rose-50 px-2.5 py-1.5 rounded-lg hover:bg-rose-100 transition-colors">
+                    <Trash2 class="w-3.5 h-3.5" />
+                  </button>
+                </div>
               </td>
             </tr>
           </tbody>
@@ -60,7 +65,7 @@
     <!-- Modal Form -->
     <div v-if="showModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
       <div class="bg-white rounded-2xl max-w-sm w-full p-5 shadow-2xl space-y-3 text-xs">
-        <h3 class="font-bold text-slate-900 text-sm">{{ editingService ? 'Pencil Layanan' : 'Tambah Layanan Baru' }}</h3>
+        <h3 class="font-bold text-slate-900 text-sm">{{ editingService ? 'Edit Layanan' : 'Tambah Layanan Baru' }}</h3>
         <form @submit.prevent="submitService" class="space-y-3">
           <div>
             <label class="font-semibold block mb-1">Nama Layanan</label>
@@ -102,21 +107,35 @@
         </form>
       </div>
     </div>
+
+    <!-- Custom Confirmation Modal -->
+    <ConfirmModal 
+      :show="showDeleteModal"
+      title="Hapus Layanan"
+      :message="`Apakah Anda yakin ingin menghapus layanan ${itemToDelete?.name}?\n\nAksi ini tidak dapat dibatalkan.`"
+      confirmText="Ya, Hapus"
+      type="danger"
+      @confirm="executeDelete"
+      @cancel="showDeleteModal = false"
+    />
   </AppLayout>
 </template>
 
 <script setup>
 import { ref } from 'vue';
-import { useForm } from '@inertiajs/vue3';
+import { useForm, router } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
-import { Plus, Pencil } from 'lucide-vue-next';
+import ConfirmModal from '@/Components/ConfirmModal.vue';
+import { Plus, Pencil, Trash2 } from 'lucide-vue-next';
 
 const props = defineProps({
   services: Array,
 });
 
 const showModal = ref(false);
+const showDeleteModal = ref(false);
 const editingService = ref(null);
+const itemToDelete = ref(null);
 
 const form = useForm({
   name: '',
@@ -158,6 +177,19 @@ function submitService() {
     form.post('/services', {
       onSuccess: () => { showModal.value = false; }
     });
+  }
+}
+
+function deleteItem(s) {
+  itemToDelete.value = s;
+  showDeleteModal.value = true;
+}
+
+function executeDelete() {
+  if (itemToDelete.value) {
+    router.delete(`/services/${itemToDelete.value.id}`);
+    showDeleteModal.value = false;
+    itemToDelete.value = null;
   }
 }
 </script>

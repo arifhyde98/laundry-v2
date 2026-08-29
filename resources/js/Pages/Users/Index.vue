@@ -44,10 +44,15 @@
               </td>
               <td class="px-5 py-4 font-semibold text-slate-700">{{ u.orders_count || 0 }} Order</td>
               <td class="px-5 py-4 text-right">
-                <button @click="openEditModal(u)" class="inline-flex items-center gap-1 text-xs font-bold text-sky-600 bg-sky-50 px-2.5 py-1.5 rounded-lg hover:bg-sky-100 transition-colors">
-                  <Edit class="w-3.5 h-3.5" />
-                  <span>Edit</span>
-                </button>
+                <div class="flex justify-end items-center gap-1.5">
+                  <button @click="openEditModal(u)" class="inline-flex items-center gap-1 text-xs font-bold text-sky-600 bg-sky-50 px-2.5 py-1.5 rounded-lg hover:bg-sky-100 transition-colors">
+                    <Edit class="w-3.5 h-3.5" />
+                    <span>Edit</span>
+                  </button>
+                  <button v-if="u.role !== 'owner'" @click="deleteItem(u)" class="inline-flex items-center gap-1 text-xs font-bold text-rose-600 bg-rose-50 px-2.5 py-1.5 rounded-lg hover:bg-rose-100 transition-colors">
+                    <Trash2 class="w-3.5 h-3.5" />
+                  </button>
+                </div>
               </td>
             </tr>
           </tbody>
@@ -98,21 +103,35 @@
         </form>
       </div>
     </div>
+
+    <!-- Custom Confirmation Modal -->
+    <ConfirmModal 
+      :show="showDeleteModal"
+      title="Hapus Akun Staf"
+      :message="`Apakah Anda yakin ingin menghapus akun ${itemToDelete?.name} (@${itemToDelete?.username})?\n\nAksi ini tidak dapat dibatalkan.`"
+      confirmText="Ya, Hapus"
+      type="danger"
+      @confirm="executeDelete"
+      @cancel="showDeleteModal = false"
+    />
   </AppLayout>
 </template>
 
 <script setup>
 import { ref } from 'vue';
-import { useForm } from '@inertiajs/vue3';
+import { useForm, router } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
-import { Plus, Edit } from 'lucide-vue-next';
+import ConfirmModal from '@/Components/ConfirmModal.vue';
+import { Plus, Edit, Trash2 } from 'lucide-vue-next';
 
 const props = defineProps({
   users: Array,
 });
 
 const showModal = ref(false);
+const showDeleteModal = ref(false);
 const editingUser = ref(null);
+const itemToDelete = ref(null);
 
 const form = useForm({
   name: '',
@@ -160,6 +179,19 @@ function submitUser() {
     form.post('/users', {
       onSuccess: () => { showModal.value = false; }
     });
+  }
+}
+
+function deleteItem(u) {
+  itemToDelete.value = u;
+  showDeleteModal.value = true;
+}
+
+function executeDelete() {
+  if (itemToDelete.value) {
+    router.delete(`/users/${itemToDelete.value.id}`);
+    showDeleteModal.value = false;
+    itemToDelete.value = null;
   }
 }
 </script>

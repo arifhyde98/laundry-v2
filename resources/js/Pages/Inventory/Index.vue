@@ -273,6 +273,16 @@
         </form>
       </div>
     </div>
+    <!-- Custom Confirmation Modal -->
+    <ConfirmModal 
+      :show="showDeleteModal"
+      title="Hapus Master Inventaris"
+      :message="`Apakah Anda yakin ingin menghapus item ${itemToDelete?.name}?\n\nAksi ini tidak dapat dibatalkan.`"
+      confirmText="Ya, Hapus"
+      type="danger"
+      @confirm="executeDelete"
+      @cancel="showDeleteModal = false"
+    />
   </AppLayout>
 </template>
 
@@ -280,6 +290,7 @@
 import { ref, computed } from 'vue';
 import { useForm, router } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import ConfirmModal from '@/Components/ConfirmModal.vue';
 import { 
   FlaskConical, Plus, Search, Boxes, AlertTriangle, 
   Sparkles, BadgePercent, Pencil, Trash2 
@@ -294,8 +305,10 @@ const props = defineProps({
 
 const showModal = ref(false);
 const showAdjustModal = ref(false);
+const showDeleteModal = ref(false);
 const editingItem = ref(null);
 const activeAdjustItem = ref(null);
+const itemToDelete = ref(null);
 const activeCategory = ref('all');
 const searchQuery = ref('');
 
@@ -414,8 +427,15 @@ function submitAdjust() {
 }
 
 function deleteItem(item) {
-  if (confirm(`Yakin ingin menghapus item ${item.name}?`)) {
-    router.delete(`/inventory/${item.id}`);
+  itemToDelete.value = item;
+  showDeleteModal.value = true;
+}
+
+function executeDelete() {
+  if (itemToDelete.value) {
+    router.delete(`/inventory/${itemToDelete.value.id}`);
+    showDeleteModal.value = false;
+    itemToDelete.value = null;
   }
 }
 </script>

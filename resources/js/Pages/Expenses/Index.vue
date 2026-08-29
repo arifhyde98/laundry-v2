@@ -50,8 +50,15 @@
                 <p class="text-xs text-slate-400">{{ exp.description || '-' }}</p>
               </td>
               <td class="px-5 py-4 text-xs font-medium text-slate-600">{{ exp.user?.name || 'Staf' }}</td>
-              <td class="px-5 py-4 text-right font-bold text-rose-600">
-                - Rp {{ formatNumber(exp.amount) }}
+              <td class="px-5 py-4 text-right">
+                <div class="flex justify-end items-center gap-2">
+                  <span class="font-bold text-rose-600">
+                    - Rp {{ formatNumber(exp.amount) }}
+                  </span>
+                  <button @click="deleteItem(exp)" class="inline-flex items-center gap-1 text-xs font-bold text-rose-600 bg-rose-50 px-2 py-1.5 rounded-lg hover:bg-rose-100 transition-colors ml-2">
+                    <Trash2 class="w-3.5 h-3.5" />
+                  </button>
+                </div>
               </td>
             </tr>
             <tr v-if="expenses.data.length === 0">
@@ -100,14 +107,26 @@
         </form>
       </div>
     </div>
+
+    <!-- Custom Confirmation Modal -->
+    <ConfirmModal 
+      :show="showDeleteModal"
+      title="Hapus Catatan Pengeluaran"
+      :message="`Apakah Anda yakin ingin menghapus catatan pengeluaran '${itemToDelete?.title}' sebesar Rp ${formatNumber(itemToDelete?.amount)}?\n\nAksi ini tidak dapat dibatalkan.`"
+      confirmText="Ya, Hapus"
+      type="danger"
+      @confirm="executeDelete"
+      @cancel="showDeleteModal = false"
+    />
   </AppLayout>
 </template>
 
 <script setup>
 import { ref } from 'vue';
-import { useForm } from '@inertiajs/vue3';
+import { useForm, router } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
-import { Plus, WalletCards } from 'lucide-vue-next';
+import ConfirmModal from '@/Components/ConfirmModal.vue';
+import { Plus, WalletCards, Trash2 } from 'lucide-vue-next';
 
 const props = defineProps({
   expenses: Object,
@@ -115,6 +134,8 @@ const props = defineProps({
 });
 
 const showModal = ref(false);
+const showDeleteModal = ref(false);
+const itemToDelete = ref(null);
 
 const form = useForm({
   category: 'operational',
@@ -135,6 +156,19 @@ function submitExpense() {
       form.reset();
     }
   });
+}
+
+function deleteItem(exp) {
+  itemToDelete.value = exp;
+  showDeleteModal.value = true;
+}
+
+function executeDelete() {
+  if (itemToDelete.value) {
+    router.delete(`/expenses/${itemToDelete.value.id}`);
+    showDeleteModal.value = false;
+    itemToDelete.value = null;
+  }
 }
 </script>
 
