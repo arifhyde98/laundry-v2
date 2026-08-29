@@ -228,11 +228,15 @@
             <span class="text-lg font-extrabold text-sky-600">Rp {{ formatNumber(cart.grandTotal) }}</span>
           </div>
 
+          <div v-if="!activeShift && $page.props.auth?.user?.role === 'cashier'" class="mt-2 p-2 bg-rose-50 text-rose-600 text-[10px] font-bold rounded-lg border border-rose-200 text-center">
+            ⚠️ Wajib "Buka Shift" sebelum bisa checkout pesanan
+          </div>
+
           <!-- Checkout Trigger Button -->
           <button 
             @click="openPaymentModal" 
-            :disabled="cart.items.length === 0 || !cart.customer"
-            class="w-full mt-3 py-3 px-4 rounded-xl bg-gradient-to-r from-sky-500 to-cyan-500 hover:from-sky-600 hover:to-cyan-600 text-white font-bold text-sm shadow-md shadow-sky-500/25 disabled:opacity-50 transition-all flex items-center justify-center gap-2"
+            :disabled="cart.items.length === 0 || !cart.customer || (!activeShift && $page.props.auth?.user?.role === 'cashier')"
+            class="w-full mt-2 py-3 px-4 rounded-xl bg-gradient-to-r from-sky-500 to-cyan-500 hover:from-sky-600 hover:to-cyan-600 text-white font-bold text-sm shadow-md shadow-sky-500/25 disabled:opacity-50 transition-all flex items-center justify-center gap-2"
           >
             <CreditCard class="w-4 h-4" />
             <span>Lanjut Pembayaran (Checkout)</span>

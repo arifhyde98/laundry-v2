@@ -59,6 +59,13 @@ class PosController extends Controller
             'notes' => ['nullable', 'string'],
         ]);
 
+        $activeShift = Shift::where('user_id', Auth::id())->where('status', 'open')->first();
+
+        // Security Policy: Cashier MUST open a shift to process transactions. Owner is flexible.
+        if (Auth::user()->role === 'cashier' && !$activeShift) {
+            return back()->with('error', 'Akses Ditolak: Anda wajib "Buka Shift" terlebih dahulu sebelum bisa memproses pesanan.');
+        }
+
         DB::beginTransaction();
 
         try {

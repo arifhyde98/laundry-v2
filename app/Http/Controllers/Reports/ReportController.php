@@ -27,11 +27,25 @@ class ReportController extends Controller
             ->get();
 
         $totalOmset = $orders->sum('grand_total');
-        $totalPaidCash = $orders->sum('paid_amount');
-        $totalWeight = $orders->sum('total_weight_qty');
+        
+        // Uang Muka & Sisa Tagihan (Piutang)
         $totalUnpaid = $orders->whereIn('payment_status', ['unpaid', 'partial'])->sum(function ($o) {
-            return $o->remaining_amount;
+            return max(0, $o->grand_total - $o->paid_amount);
         });
+
+        // KAS RIIL MASUK (Actual Cash In): Pembayaran Order (non-deposit) + Topup Deposit Baru
+        $orderPayments = \App\Models\OrderPayment::whereDate('paid_at', '>=', $startDate)
+            ->whereDate('paid_at', '<=', $endDate)
+            ->where('payment_method', '!=', 'deposit')
+            ->sum('amount_paid');
+
+        $depositTopups = \App\Models\CustomerDeposit::whereDate('created_at', '>=', $startDate)
+            ->whereDate('created_at', '<=', $endDate)
+            ->where('type', 'topup')
+            ->sum('amount');
+
+        $totalPaidCash = $orderPayments + $depositTopups;
+        $totalWeight = $orders->sum('total_weight_qty');
 
         // Expenses within range
         $expenses = Expense::whereDate('expense_date', '>=', $startDate)

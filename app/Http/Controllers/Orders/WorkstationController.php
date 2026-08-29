@@ -56,6 +56,9 @@ class WorkstationController extends Controller
             }
 
             if ($newStatus === 'completed') {
+                if ($order->payment_status !== 'paid') {
+                    throw new \Exception('Cucian tidak bisa diserahkan (Completed) karena pembayaran belum LUNAS. Sisa Tagihan: Rp ' . number_format($order->grand_total - $order->paid_amount, 0, ',', '.'));
+                }
                 $updateData['actual_completion'] = now();
             }
 

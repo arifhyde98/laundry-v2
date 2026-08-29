@@ -75,11 +75,19 @@ class OrderController extends Controller
     {
         $order = Order::findOrFail($id);
 
+        $remaining_balance = max(0, (float)$order->grand_total - (float)$order->paid_amount);
+
         $validated = $request->validate([
-            'amount' => ['required', 'numeric', 'min:1'],
+            'amount' => ['required', 'numeric', 'min:1', 'max:' . $remaining_balance],
             'payment_method' => ['required', 'in:cash,deposit,qris,transfer'],
             'notes' => ['nullable', 'string'],
         ]);
+
+        $activeShift = Shift::where('user_id', Auth::id())->where('status', 'open')->first();
+
+        if (Auth::user()->role === 'cashier' && !$activeShift) {
+            return back()->with('error', 'Akses Ditolak: Anda wajib "Buka Shift" terlebih dahulu sebelum bisa menerima pembayaran.');
+        }
 
         DB::beginTransaction();
 

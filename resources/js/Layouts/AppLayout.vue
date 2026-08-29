@@ -1,61 +1,69 @@
 <template>
   <div class="min-h-screen bg-slate-50 flex">
-    <!-- Mobile Sidebar Backdrop -->
+    <!-- Mobile Sidebar Backdrop Overlay -->
     <div 
       v-if="isSidebarOpen" 
-      class="fixed inset-0 z-40 bg-slate-900/60 backdrop-blur-sm lg:hidden transition-opacity"
-      @click="isSidebarOpen = false"
+      @click="isSidebarOpen = false" 
+      class="fixed inset-0 z-40 bg-slate-900/50 backdrop-blur-xs lg:hidden"
     ></div>
 
-    <!-- Sidebar -->
+    <!-- Sidebar Navigation -->
     <aside 
       :class="[
-        'fixed inset-y-0 left-0 z-50 w-64 bg-slate-900 text-slate-300 flex flex-col transition-transform duration-300 ease-in-out lg:static lg:translate-x-0',
-        isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
+        'fixed lg:static inset-y-0 left-0 z-50 w-64 bg-slate-900 text-slate-300 flex flex-col transition-transform duration-200 ease-in-out border-r border-slate-800',
+        isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
       ]"
     >
-      <!-- Brand Header -->
-      <div class="flex items-center gap-3 px-6 py-5 border-b border-slate-800">
-        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-sky-500 to-cyan-400 flex items-center justify-center text-white shadow-lg shadow-sky-500/30">
-          <Droplets class="w-6 h-6" />
+      <!-- Brand Logo & Header -->
+      <div class="h-20 flex items-center justify-between px-5 border-b border-slate-800/80">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-sky-500 to-cyan-400 flex items-center justify-center text-white shadow-lg shadow-sky-500/30">
+            <Droplets class="w-6 h-6" />
+          </div>
+          <div>
+            <h1 class="font-bold text-white tracking-tight leading-tight text-base">{{ $page.props.outlet?.name || 'Laundry POS' }}</h1>
+            <span class="text-xs text-sky-400 font-medium">Modern Express v2.0</span>
+          </div>
         </div>
-        <div>
-          <h1 class="font-bold text-white tracking-tight leading-tight">Laundry POS</h1>
-          <p class="text-xs text-sky-400 font-medium">Modern Express v2.0</p>
-        </div>
+        <button @click="isSidebarOpen = false" class="lg:hidden text-slate-400 hover:text-white p-1">
+          ✕
+        </button>
       </div>
 
-      <!-- Navigation Menu -->
-      <nav class="flex-1 px-4 py-4 space-y-1 overflow-y-auto">
-        <div class="px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-slate-500">Operasional</div>
-        
+      <!-- Navigation Links -->
+      <nav class="flex-1 px-4 py-5 space-y-1.5 overflow-y-auto">
+        <!-- 1. OPERASIONAL -->
+        <div class="px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-500">Operasional</div>
+
         <Link 
           :href="route('dashboard')" 
-          :class="['flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all', isActive('dashboard') ? 'bg-sky-600 text-white shadow-md shadow-sky-600/30' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800']"
+          :class="['flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all', isActive('dashboard') ? 'bg-sky-600 text-white shadow-md shadow-sky-600/30' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60']"
         >
           <LayoutDashboard class="w-5 h-5" />
           <span>Dashboard</span>
         </Link>
 
-        <Link 
-          :href="route('pos.index')" 
-          :class="['flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all', isActive('pos.index') ? 'bg-sky-600 text-white shadow-md shadow-sky-600/30' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800']"
-        >
-          <ReceiptText class="w-5 h-5" />
-          <span>Kasir POS (Cepat)</span>
-        </Link>
+        <div v-if="['owner', 'cashier'].includes(user?.role)">
+          <Link 
+            :href="route('pos.index')" 
+            :class="['flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all', isActive('pos.index') ? 'bg-sky-600 text-white shadow-md shadow-sky-600/30' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60']"
+          >
+            <ReceiptText class="w-5 h-5" />
+            <span>Kasir POS (Cepat)</span>
+          </Link>
 
-        <Link 
-          :href="route('orders.index')" 
-          :class="['flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all', isActive('orders.*') ? 'bg-sky-600 text-white shadow-md shadow-sky-600/30' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800']"
-        >
-          <ShoppingBag class="w-5 h-5" />
-          <span>Data Transaksi</span>
-        </Link>
+          <Link 
+            :href="route('orders.index')" 
+            :class="['flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all', isActive('orders.*') ? 'bg-sky-600 text-white shadow-md shadow-sky-600/30' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60']"
+          >
+            <ShoppingBag class="w-5 h-5" />
+            <span>Data Transaksi</span>
+          </Link>
+        </div>
 
         <Link 
           :href="route('workstation.index')" 
-          :class="['flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all', isActive('workstation.*') ? 'bg-sky-600 text-white shadow-md shadow-sky-600/30' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800']"
+          :class="['flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all', isActive('workstation.*') ? 'bg-sky-600 text-white shadow-md shadow-sky-600/30' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60']"
         >
           <Kanban class="w-5 h-5" />
           <span>Antrian Workshop</span>
@@ -63,70 +71,94 @@
 
         <Link 
           :href="route('racks.index')" 
-          :class="['flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all', isActive('racks.*') ? 'bg-sky-600 text-white shadow-md shadow-sky-600/30' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800']"
+          :class="['flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all', isActive('racks.*') ? 'bg-sky-600 text-white shadow-md shadow-sky-600/30' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60']"
         >
           <Boxes class="w-5 h-5" />
           <span>Rak Penyimpanan</span>
         </Link>
 
-        <div class="pt-4 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-slate-500">Pelanggan & Tarif</div>
+        <!-- 2. PELANGGAN & TARIF -->
+        <div class="pt-4 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-500">Pelanggan & Tarif</div>
 
-        <Link 
-          :href="route('customers.index')" 
-          :class="['flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all', isActive('customers.*') ? 'bg-sky-600 text-white shadow-md shadow-sky-600/30' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800']"
-        >
-          <Users class="w-5 h-5" />
-          <span>Data Pelanggan</span>
-        </Link>
+        <div v-if="['owner', 'cashier'].includes(user?.role)">
+          <Link 
+            :href="route('customers.index')" 
+            :class="['flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all', isActive('customers.*') ? 'bg-sky-600 text-white shadow-md shadow-sky-600/30' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60']"
+          >
+            <Users class="w-5 h-5" />
+            <span>Data Pelanggan</span>
+          </Link>
 
-        <Link 
-          :href="route('services.index')" 
-          :class="['flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all', isActive('services.*') ? 'bg-sky-600 text-white shadow-md shadow-sky-600/30' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800']"
-        >
-          <Tags class="w-5 h-5" />
-          <span>Tarif Layanan</span>
-        </Link>
+          <Link 
+            :href="route('services.index')" 
+            :class="['flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all', isActive('services.*') ? 'bg-sky-600 text-white shadow-md shadow-sky-600/30' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60']"
+          >
+            <Tags class="w-5 h-5" />
+            <span>Tarif Layanan</span>
+          </Link>
+        </div>
 
-        <div class="pt-4 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-slate-500">Keuangan & Manajemen</div>
+        <div v-if="user?.role === 'owner'">
+          <Link 
+            :href="route('inventory.index')" 
+            :class="['flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all', isActive('inventory.*') ? 'bg-sky-600 text-white shadow-md shadow-sky-600/30' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60']"
+          >
+            <FlaskConical class="w-5 h-5" />
+            <span>Stok & Resep Bahan</span>
+          </Link>
 
-        <Link 
-          :href="route('expenses.index')" 
-          :class="['flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all', isActive('expenses.*') ? 'bg-sky-600 text-white shadow-md shadow-sky-600/30' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800']"
-        >
-          <WalletCards class="w-5 h-5" />
-          <span>Pengeluaran & Kas</span>
-        </Link>
+          <Link 
+            :href="route('outlet.index')" 
+            :class="['flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all', isActive('outlet.*') ? 'bg-sky-600 text-white shadow-md shadow-sky-600/30' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60']"
+          >
+            <Store class="w-5 h-5" />
+            <span>Profil Usaha & Struk</span>
+          </Link>
+        </div>
+
+        <!-- 3. KEUANGAN & MANAJEMEN -->
+        <div class="pt-4 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-500">Keuangan & Manajemen</div>
 
         <Link 
           href="/rewash" 
-          :class="['flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all', page.url.startsWith('/rewash') ? 'bg-sky-600 text-white shadow-md shadow-sky-600/30' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800']"
+          :class="['flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all', page.url.startsWith('/rewash') ? 'bg-sky-600 text-white shadow-md shadow-sky-600/30' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60']"
         >
           <RotateCcw class="w-5 h-5" />
-          Garansi / Komplain
+          <span>Garansi / Komplain</span>
         </Link>
 
-        <Link 
-          :href="route('reports.index')" 
-          :class="['flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all', isActive('reports.*') ? 'bg-sky-600 text-white shadow-md shadow-sky-600/30' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800']"
-        >
-          <BarChart3 class="w-5 h-5" />
-          <span>Laporan & Analitik</span>
-        </Link>
+        <div v-if="user?.role === 'owner'">
+          <Link 
+            :href="route('expenses.index')" 
+            :class="['flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all', isActive('expenses.*') ? 'bg-sky-600 text-white shadow-md shadow-sky-600/30' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60']"
+          >
+            <WalletCards class="w-5 h-5" />
+            <span>Pengeluaran & Kas</span>
+          </Link>
 
-        <Link 
-          :href="route('users.index')" 
-          :class="['flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all', isActive('users.*') ? 'bg-sky-600 text-white shadow-md shadow-sky-600/30' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800']"
-        >
-          <UserCog class="w-5 h-5" />
-          <span>Manajemen Staf</span>
-        </Link>
+          <Link 
+            :href="route('reports.index')" 
+            :class="['flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all', isActive('reports.*') ? 'bg-sky-600 text-white shadow-md shadow-sky-600/30' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60']"
+          >
+            <BarChart3 class="w-5 h-5" />
+            <span>Laporan & Analitik</span>
+          </Link>
+
+          <Link 
+            :href="route('users.index')" 
+            :class="['flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all', isActive('users.*') ? 'bg-sky-600 text-white shadow-md shadow-sky-600/30' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60']"
+          >
+            <UserCog class="w-5 h-5" />
+            <span>Manajemen Staf</span>
+          </Link>
+        </div>
       </nav>
 
       <!-- Bottom User Profile Card -->
       <div class="p-4 border-t border-slate-800">
-        <div class="flex items-center justify-between p-2 rounded-xl bg-slate-800/60">
+        <div class="flex items-center justify-between p-2.5 rounded-2xl bg-slate-800/60">
           <div class="flex items-center gap-3 overflow-hidden">
-            <div class="w-9 h-9 rounded-lg bg-sky-500/20 text-sky-400 flex items-center justify-center font-bold text-sm">
+            <div class="w-9 h-9 rounded-xl bg-sky-500/20 text-sky-400 flex items-center justify-center font-bold text-sm">
               {{ userInitial }}
             </div>
             <div class="truncate">
@@ -134,7 +166,7 @@
               <span class="text-[11px] font-medium px-1.5 py-0.5 rounded bg-slate-700 text-slate-300 capitalize">{{ user?.role || 'owner' }}</span>
             </div>
           </div>
-          <Link :href="route('logout')" method="post" as="button" class="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-slate-700/50 rounded-lg transition-colors" title="Keluar">
+          <Link :href="route('logout')" method="post" as="button" class="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-slate-700/50 rounded-lg transition-colors cursor-pointer" title="Keluar">
             <LogOut class="w-4 h-4" />
           </Link>
         </div>
@@ -148,7 +180,7 @@
         <div class="flex items-center gap-3">
           <button 
             @click="isSidebarOpen = !isSidebarOpen"
-            class="p-2 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 lg:hidden"
+            class="p-2 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 lg:hidden cursor-pointer"
           >
             <Menu class="w-6 h-6" />
           </button>
@@ -176,16 +208,16 @@
       </header>
 
       <!-- Toast Alerts -->
-      <div v-if="$page.props.flash?.success" class="m-4 mb-0 p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm flex items-center justify-between">
+      <div v-if="$page.props.flash?.success" class="m-4 mb-0 p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs sm:text-sm flex items-center justify-between shadow-xs">
         <div class="flex items-center gap-2">
-          <CheckCircle2 class="w-5 h-5 text-emerald-600" />
+          <CheckCircle2 class="w-5 h-5 text-emerald-600 shrink-0" />
           <span>{{ $page.props.flash.success }}</span>
         </div>
       </div>
 
-      <div v-if="$page.props.flash?.error" class="m-4 mb-0 p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-sm flex items-center justify-between">
+      <div v-if="$page.props.flash?.error" class="m-4 mb-0 p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs sm:text-sm flex items-center justify-between shadow-xs">
         <div class="flex items-center gap-2">
-          <AlertCircle class="w-5 h-5 text-rose-600" />
+          <AlertCircle class="w-5 h-5 text-rose-600 shrink-0" />
           <span>{{ $page.props.flash.error }}</span>
         </div>
       </div>
@@ -203,24 +235,25 @@ import { ref, computed } from 'vue';
 import { Link, usePage } from '@inertiajs/vue3';
 import { 
   LayoutDashboard, 
-  ShoppingCart, 
-  ListOrdered, 
-  ClipboardList, 
-  Box, 
+  Droplets, 
+  ReceiptText, 
+  ShoppingBag, 
+  Kanban, 
+  RotateCcw, 
+  Boxes, 
+  Tags, 
   Users, 
-  Tag, 
+  FlaskConical, 
+  Store,
   WalletCards, 
   BarChart3, 
-  UsersRound,
-  Search,
-  Bell,
-  ChevronDown,
-  LogOut,
-  User,
-  RotateCcw,
-  Droplets, ReceiptText, ShoppingBag, Kanban, 
-  Boxes, Tags, UserCog, 
-  Menu, Plus, Calendar, CheckCircle2, AlertCircle 
+  UserCog, 
+  Menu, 
+  Plus, 
+  Calendar, 
+  CheckCircle2, 
+  AlertCircle, 
+  LogOut 
 } from 'lucide-vue-next';
 
 defineProps({
@@ -244,7 +277,6 @@ const formattedDate = computed(() => {
 });
 
 function isActive(routeName) {
-  // Simple check using current URL or component name
   const currentUrl = page.url;
   if (routeName === 'dashboard' && (currentUrl === '/' || currentUrl === '/dashboard')) return true;
   if (routeName === 'pos.index' && currentUrl.startsWith('/pos')) return true;
@@ -253,6 +285,8 @@ function isActive(routeName) {
   if (routeName === 'racks.*' && currentUrl.startsWith('/racks')) return true;
   if (routeName === 'customers.*' && currentUrl.startsWith('/customers')) return true;
   if (routeName === 'services.*' && currentUrl.startsWith('/services')) return true;
+  if (routeName === 'inventory.*' && currentUrl.startsWith('/inventory')) return true;
+  if (routeName === 'outlet.*' && currentUrl.startsWith('/outlet')) return true;
   if (routeName === 'expenses.*' && currentUrl.startsWith('/expenses')) return true;
   if (routeName === 'reports.*' && currentUrl.startsWith('/reports')) return true;
   if (routeName === 'users.*' && currentUrl.startsWith('/users')) return true;
@@ -269,6 +303,8 @@ function route(name, params = {}) {
     'racks.index': '/racks',
     'customers.index': '/customers',
     'services.index': '/services',
+    'inventory.index': '/inventory',
+    'outlet.index': '/outlet',
     'expenses.index': '/expenses',
     'reports.index': '/reports',
     'users.index': '/users',
@@ -277,4 +313,3 @@ function route(name, params = {}) {
   return routes[name] || '/' + name.replace('.', '/');
 }
 </script>
-

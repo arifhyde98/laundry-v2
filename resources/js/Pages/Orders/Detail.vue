@@ -185,15 +185,37 @@
             </div>
           </div>
         </div>
+
+        <!-- Rewash & Complaints History Card -->
+        <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm space-y-3">
+          <div class="flex items-center justify-between">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400">Garansi & Komplain</h3>
+            <Link href="/rewash" class="text-[11px] text-indigo-600 font-bold hover:underline">+ Tiket Baru</Link>
+          </div>
+          <div v-if="order.rewash_tickets && order.rewash_tickets.length > 0" class="space-y-2">
+            <div v-for="t in order.rewash_tickets" :key="t.id" class="p-3 bg-amber-50/70 border border-amber-200/60 rounded-xl text-xs space-y-1">
+              <div class="flex items-center justify-between">
+                <span class="font-mono font-bold text-indigo-700">{{ t.ticket_code }}</span>
+                <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-amber-100 text-amber-800">{{ t.status }}</span>
+              </div>
+              <p class="text-slate-700 font-medium">{{ t.reason }}</p>
+              <p v-if="t.resolution_note" class="text-slate-500 text-[11px] italic">Res: {{ t.resolution_note }}</p>
+            </div>
+          </div>
+          <p v-else class="text-xs text-slate-400 italic">Tidak ada catatan komplain pada order ini.</p>
+        </div>
       </div>
     </div>
 
     <!-- Hidden Thermal Receipt for Printing -->
     <div id="thermal-receipt" class="hidden print:block print:w-72 p-2 font-mono text-xs text-black">
       <div class="text-center pb-2 border-b border-dashed border-black">
-        <h2 class="font-bold text-sm">LAUNDRY EXPRESS</h2>
-        <p class="text-[10px]">Jl. Utama Laundry No. 1, Kota</p>
-        <p class="text-[10px]">Telp/WA: 0812-3456-7890</p>
+        <h2 class="font-bold text-sm uppercase">{{ order.outlet?.name || $page.props.outlet?.name || 'LAUNDRY EXPRESS' }}</h2>
+        <p v-if="order.outlet?.receipt_header || $page.props.outlet?.receipt_header" class="text-[9px] italic font-semibold">
+          {{ order.outlet?.receipt_header || $page.props.outlet?.receipt_header }}
+        </p>
+        <p class="text-[10px]">{{ order.outlet?.address || $page.props.outlet?.address || 'Jl. Utama Laundry No. 1, Kota' }}</p>
+        <p class="text-[10px]">Telp/WA: {{ order.outlet?.phone || $page.props.outlet?.phone || '0812-3456-7890' }}</p>
       </div>
 
       <div class="py-2 border-b border-dashed border-black text-[10px] space-y-0.5">
@@ -222,8 +244,11 @@
       <!-- QR Code Tracking -->
       <div class="text-center pt-2">
         <img :src="receipt.qrCode" alt="QR Code Resi" class="w-24 h-24 mx-auto" />
-        <p class="text-[9px] mt-1">Scan QR Code untuk Cek Progres Cucian</p>
-        <p class="text-[8px] mt-2 italic">Terima kasih atas kunjungan Anda!</p>
+        <p class="text-[9px] mt-1 font-bold">Scan QR Code untuk Cek Progres Cucian</p>
+        <p v-if="order.outlet?.receipt_footer || $page.props.outlet?.receipt_footer" class="text-[8px] mt-1 text-slate-700 whitespace-pre-line leading-tight">
+          {{ order.outlet?.receipt_footer || $page.props.outlet?.receipt_footer }}
+        </p>
+        <p class="text-[8px] mt-1 italic">Terima kasih atas kunjungan Anda!</p>
       </div>
     </div>
 

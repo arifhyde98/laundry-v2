@@ -80,6 +80,12 @@ class CustomerController extends Controller
             'notes' => ['nullable', 'string'],
         ]);
 
+        $activeShift = Shift::where('user_id', Auth::id())->where('status', 'open')->first();
+        
+        if (Auth::user()->role === 'cashier' && !$activeShift) {
+            return back()->with('error', 'Akses Ditolak: Anda wajib "Buka Shift" terlebih dahulu sebelum bisa menerima uang deposit.');
+        }
+
         DB::beginTransaction();
 
         try {
