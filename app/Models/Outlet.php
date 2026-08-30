@@ -10,6 +10,7 @@ class Outlet extends Model
 
     protected $casts = [
         'is_active' => 'boolean',
+        'is_wa_enabled' => 'boolean',
     ];
 
     public function racks()

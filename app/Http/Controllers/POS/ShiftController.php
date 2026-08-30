@@ -28,7 +28,7 @@ class ShiftController extends Controller
             'user_id' => Auth::id(),
             'starting_cash' => $validated['starting_cash'],
             'expected_cash' => $validated['starting_cash'],
-            'notes' => $validated['notes'],
+            'notes' => $validated['notes'] ?? null,
             'status' => 'open',
             'opened_at' => now(),
         ]);
@@ -56,7 +56,7 @@ class ShiftController extends Controller
         $activeShift->update([
             'closing_cash' => $validated['closing_cash'],
             'cash_difference' => $difference,
-            'notes' => $validated['notes'],
+            'notes' => $validated['notes'] ?? null,
             'status' => 'closed',
             'closed_at' => now(),
         ]);

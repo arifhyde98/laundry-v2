@@ -31,6 +31,10 @@ class DashboardController extends Controller
         $thisMonthExpenses = Expense::whereYear('expense_date', Carbon::now()->year)
             ->whereMonth('expense_date', Carbon::now()->month)
             ->sum('amount');
+
+        $thisMonthCommissions = \App\Models\EmployeeCommission::whereYear('created_at', Carbon::now()->year)
+            ->whereMonth('created_at', Carbon::now()->month)
+            ->sum('commission_amount');
         
         $totalUnpaidDebt = Order::whereIn('payment_status', ['unpaid', 'partial'])
             ->selectRaw('SUM(grand_total - paid_amount) as debt')
@@ -78,7 +82,7 @@ class DashboardController extends Controller
                 'todaySales' => (float)$todaySales,
                 'thisMonthSales' => (float)$thisMonthSales,
                 'thisMonthExpenses' => (float)$thisMonthExpenses,
-                'netProfitThisMonth' => (float)$thisMonthSales - (float)$thisMonthExpenses,
+                'netProfitThisMonth' => (float)$thisMonthSales - (float)$thisMonthExpenses - (float)$thisMonthCommissions,
                 'totalUnpaidDebt' => (float)$totalUnpaidDebt,
                 'totalRacks' => $totalRacks,
                 'availableRacks' => $availableRacks,

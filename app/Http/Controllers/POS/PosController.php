@@ -182,8 +182,13 @@ class PosController extends Controller
 
             DB::commit();
 
-            // Dispatch WhatsApp Notification in Background
-            $whatsAppService->sendOrderReceivedNotification($order);
+            // Dispatch WhatsApp Notification OUTSIDE transaction try-catch
+            // so API failure doesn't show error to cashier
+            try {
+                $whatsAppService->sendOrderReceivedNotification($order);
+            } catch (\Exception $waEx) {
+                \Illuminate\Support\Facades\Log::warning("WA notification failed for order {$order->id}: " . $waEx->getMessage());
+            }
 
             return redirect()->route('orders.show', $order->id)->with('success', "Order {$order->invoice_code} berhasil dibuat!");
         } catch (\Exception $e) {

@@ -101,7 +101,7 @@ class CustomerController extends Controller
                 'type' => 'topup',
                 'balance_after' => $customer->deposit_balance,
                 'payment_method' => $validated['payment_method'],
-                'notes' => $validated['notes'],
+                'notes' => $validated['notes'] ?? null,
             ]);
 
             if ($activeShift) {

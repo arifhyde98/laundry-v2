@@ -68,6 +68,7 @@ class OutletController extends Controller
             \App\Models\Expense::truncate();
             \App\Models\EmployeeCommission::truncate();
             \App\Models\RewashTicket::truncate();
+            \App\Models\WhatsappLog::truncate();
             \Illuminate\Support\Facades\DB::statement('SET FOREIGN_KEY_CHECKS=1;');
             
             // Reset Customer balances & Inventory stock back to 0
