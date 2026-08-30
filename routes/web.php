@@ -77,6 +77,10 @@ Route::middleware(['auth'])->group(function () {
         Route::put('/outlet', [OutletController::class, 'update'])->name('outlet.update');
         Route::post('/outlet/reset-transactions', [OutletController::class, 'resetTransactions'])->name('outlet.reset');
 
+        // Payment Gateways
+        Route::get('/payment-gateways', [\App\Http\Controllers\PaymentGatewayController::class, 'index'])->name('payment-gateways.index');
+        Route::put('/payment-gateways/{id}', [\App\Http\Controllers\PaymentGatewayController::class, 'update'])->name('payment-gateways.update');
+
         // KEUANGAN & LAPORAN
         Route::get('/expenses', [ExpenseController::class, 'index'])->name('expenses.index');
         Route::post('/expenses', [ExpenseController::class, 'store'])->name('expenses.store');

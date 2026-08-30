@@ -114,6 +114,14 @@
             <Store class="w-5 h-5" />
             <span>Profil Usaha & Struk</span>
           </Link>
+
+          <Link 
+            :href="route('payment-gateways.index')" 
+            :class="['flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all', isActive('payment-gateways.*') ? 'bg-sky-600 text-white shadow-md shadow-sky-600/30' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60']"
+          >
+            <CreditCard class="w-5 h-5" />
+            <span>Payment Gateway</span>
+          </Link>
         </div>
 
         <!-- 3. KEUANGAN & MANAJEMEN -->
@@ -340,6 +348,7 @@ function route(name, params = {}) {
     'services.index': '/services',
     'inventory.index': '/inventory',
     'outlet.index': '/outlet',
+    'payment-gateways.index': '/payment-gateways',
     'expenses.index': '/expenses',
     'reports.index': '/reports',
     'users.index': '/users',
