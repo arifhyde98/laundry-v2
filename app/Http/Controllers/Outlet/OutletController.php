@@ -47,6 +47,9 @@ class OutletController extends Controller
             'receipt_paper_size' => ['required', 'in:58mm,80mm'],
             'is_wa_enabled' => ['boolean'],
             'wa_api_token' => ['nullable', 'string', 'max:255'],
+            'commission_washing' => ['required', 'numeric', 'min:0'],
+            'commission_ironing' => ['required', 'numeric', 'min:0'],
+            'commission_packing' => ['required', 'numeric', 'min:0'],
         ]);
 
         $outlet->update($validated);

@@ -78,11 +78,40 @@ class WorkstationController extends Controller
                 $chemicalService->deductStockForOrder($order);
             }
 
-            // Record Commission for Operator
+            // Hierarchy of statuses to handle "undo" or backwards movement
+            $statusHierarchy = [
+                'received' => 1,
+                'washing' => 2,
+                'drying' => 3,
+                'ironing' => 4,
+                'packing' => 5,
+                'ready' => 6,
+                'completed' => 7,
+            ];
+
+            $newStatusRank = $statusHierarchy[$newStatus] ?? 0;
+
+            // Remove commissions for stages AHEAD of the new status (Undo scenario)
+            $stagesToRevoke = [];
+            foreach ($statusHierarchy as $stage => $rank) {
+                if ($rank > $newStatusRank) {
+                    $stagesToRevoke[] = $stage;
+                }
+            }
+
+            if (!empty($stagesToRevoke)) {
+                EmployeeCommission::where('order_id', $order->id)
+                    ->whereIn('activity', $stagesToRevoke)
+                    ->where('is_paid', false) // Only revoke if it hasn't been paid out
+                    ->delete();
+            }
+
+            // Record Commission for Operator (Prevent Double Claim with updateOrCreate)
+            $outlet = \App\Models\Outlet::first();
             $commissionRates = [
-                'washing' => 500, // Rp 500 / kg
-                'ironing' => 1000, // Rp 1000 / kg
-                'packing' => 200, // Rp 200 / kg
+                'washing' => $outlet ? $outlet->commission_washing : 500,
+                'ironing' => $outlet ? $outlet->commission_ironing : 1000,
+                'packing' => $outlet ? $outlet->commission_packing : 200,
             ];
 
             if (isset($commissionRates[$newStatus])) {
@@ -90,15 +119,19 @@ class WorkstationController extends Controller
                 $qty = (float)$order->total_weight_qty;
                 $commAmount = $qty * $rate;
 
-                EmployeeCommission::create([
-                    'user_id' => Auth::id(),
-                    'order_id' => $order->id,
-                    'activity' => $newStatus,
-                    'quantity' => $qty,
-                    'rate_per_unit' => $rate,
-                    'commission_amount' => $commAmount,
-                    'is_paid' => false,
-                ]);
+                EmployeeCommission::updateOrCreate(
+                    [
+                        'order_id' => $order->id,
+                        'activity' => $newStatus,
+                    ],
+                    [
+                        'user_id' => Auth::id(), // If updated, re-assign to the latest user who did the stage
+                        'quantity' => $qty,
+                        'rate_per_unit' => $rate,
+                        'commission_amount' => $commAmount,
+                        'is_paid' => false,
+                    ]
+                );
             }
 
             DB::commit();

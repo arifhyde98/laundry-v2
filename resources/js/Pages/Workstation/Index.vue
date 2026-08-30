@@ -49,10 +49,15 @@
               <span class="text-[10px] font-semibold text-sky-600">{{ order.total_weight_qty }} Kg</span>
             </div>
             <p class="text-xs font-medium text-slate-700">{{ order.customer?.name }}</p>
-            <button @click="advanceStatus(order, 'drying')" class="w-full py-1.5 bg-cyan-500 hover:bg-cyan-600 text-white rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-1">
-              <span>Pengeringan</span>
-              <ArrowRight class="w-3.5 h-3.5" />
-            </button>
+            <div class="flex gap-1.5 pt-1">
+              <button @click="revertStatus(order, 'received')" class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg transition-all" title="Batal & Kembali">
+                <Undo2 class="w-3.5 h-3.5" />
+              </button>
+              <button @click="advanceStatus(order, 'drying')" class="flex-1 py-1.5 bg-cyan-500 hover:bg-cyan-600 text-white rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-1">
+                <span>Pengeringan</span>
+                <ArrowRight class="w-3.5 h-3.5" />
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -70,10 +75,15 @@
               <span class="text-[10px] font-semibold text-cyan-600">{{ order.total_weight_qty }} Kg</span>
             </div>
             <p class="text-xs font-medium text-slate-700">{{ order.customer?.name }}</p>
-            <button @click="advanceStatus(order, 'ironing')" class="w-full py-1.5 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-1">
-              <span>Setrika</span>
-              <ArrowRight class="w-3.5 h-3.5" />
-            </button>
+            <div class="flex gap-1.5 pt-1">
+              <button @click="revertStatus(order, 'washing')" class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg transition-all" title="Batal & Kembali">
+                <Undo2 class="w-3.5 h-3.5" />
+              </button>
+              <button @click="advanceStatus(order, 'ironing')" class="flex-1 py-1.5 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-1">
+                <span>Setrika</span>
+                <ArrowRight class="w-3.5 h-3.5" />
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -91,10 +101,15 @@
               <span class="text-[10px] font-semibold text-indigo-600">{{ order.total_weight_qty }} Kg</span>
             </div>
             <p class="text-xs font-medium text-slate-700">{{ order.customer?.name }}</p>
-            <button @click="advanceStatus(order, 'packing')" class="w-full py-1.5 bg-purple-500 hover:bg-purple-600 text-white rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-1">
-              <span>Packing</span>
-              <ArrowRight class="w-3.5 h-3.5" />
-            </button>
+            <div class="flex gap-1.5 pt-1">
+              <button @click="revertStatus(order, 'drying')" class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg transition-all" title="Batal & Kembali">
+                <Undo2 class="w-3.5 h-3.5" />
+              </button>
+              <button @click="advanceStatus(order, 'packing')" class="flex-1 py-1.5 bg-purple-500 hover:bg-purple-600 text-white rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-1">
+                <span>Packing</span>
+                <ArrowRight class="w-3.5 h-3.5" />
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -112,10 +127,15 @@
               <span class="text-[10px] font-semibold text-purple-600">{{ order.total_weight_qty }} Kg</span>
             </div>
             <p class="text-xs font-medium text-slate-700">{{ order.customer?.name }}</p>
-            <button @click="openRackAssignment(order)" class="w-full py-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-1">
-              <span>Pilih Slot Rak</span>
-              <Boxes class="w-3.5 h-3.5" />
-            </button>
+            <div class="flex gap-1.5 pt-1">
+              <button @click="revertStatus(order, 'ironing')" class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg transition-all" title="Batal & Kembali">
+                <Undo2 class="w-3.5 h-3.5" />
+              </button>
+              <button @click="openRackAssignment(order)" class="flex-1 py-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-1">
+                <span>Pilih Slot Rak</span>
+                <Boxes class="w-3.5 h-3.5" />
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -133,10 +153,15 @@
               <span class="text-[10px] font-bold text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded">{{ order.rack?.rack_code || 'Rak ?' }}</span>
             </div>
             <p class="text-xs font-medium text-slate-700">{{ order.customer?.name }}</p>
-            <button @click="advanceStatus(order, 'completed')" class="w-full py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-1">
-              <CheckCircle class="w-3.5 h-3.5" />
-              <span>Diambil Pelanggan</span>
-            </button>
+            <div class="flex gap-1.5 pt-1">
+              <button @click="revertStatus(order, 'packing')" class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg transition-all" title="Batal & Keluarkan dari Rak">
+                <Undo2 class="w-3.5 h-3.5" />
+              </button>
+              <button @click="advanceStatus(order, 'completed')" class="flex-1 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-1">
+                <CheckCircle class="w-3.5 h-3.5" />
+                <span>Diambil Pelanggan</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -170,7 +195,7 @@
 import { ref } from 'vue';
 import { router } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
-import { ArrowRight, Boxes, CheckCircle } from 'lucide-vue-next';
+import { ArrowRight, Boxes, CheckCircle, Undo2 } from 'lucide-vue-next';
 
 const props = defineProps({
   orders: Array,
@@ -191,6 +216,12 @@ function advanceStatus(order, nextStatus) {
   }, {
     preserveScroll: true,
   });
+}
+
+function revertStatus(order, prevStatus) {
+  if (confirm(`Yakin ingin membatalkan status pesanan ${order.invoice_code} dan mengembalikannya ke tahap sebelumnya? Komisi tahap ini akan dihapus jika ada.`)) {
+    advanceStatus(order, prevStatus);
+  }
 }
 
 function openRackAssignment(order) {

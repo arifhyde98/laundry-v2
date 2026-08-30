@@ -132,6 +132,52 @@
               </div>
             </div>
           </div>
+          
+          <div class="pt-3 border-t border-slate-100">
+            <h3 class="font-bold text-slate-900 text-sm mb-3 flex items-center gap-1.5 text-indigo-700">
+              <Sparkles class="w-4 h-4" />
+              <span>Pengaturan Komisi Karyawan (Per Kg)</span>
+            </h3>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <label class="font-bold text-slate-700 block mb-1">Cuci (Washing)</label>
+                <div class="relative">
+                  <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-500 font-medium text-xs">Rp</span>
+                  <input 
+                    v-model="form.commission_washing" 
+                    type="number" 
+                    class="w-full py-2.5 pl-8 pr-3 bg-slate-50 border border-slate-200 rounded-xl font-medium text-slate-900 text-xs focus:bg-white focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+              </div>
+              <div>
+                <label class="font-bold text-slate-700 block mb-1">Setrika (Ironing)</label>
+                <div class="relative">
+                  <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-500 font-medium text-xs">Rp</span>
+                  <input 
+                    v-model="form.commission_ironing" 
+                    type="number" 
+                    class="w-full py-2.5 pl-8 pr-3 bg-slate-50 border border-slate-200 rounded-xl font-medium text-slate-900 text-xs focus:bg-white focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+              </div>
+              <div>
+                <label class="font-bold text-slate-700 block mb-1">Kemas (Packing)</label>
+                <div class="relative">
+                  <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-500 font-medium text-xs">Rp</span>
+                  <input 
+                    v-model="form.commission_packing" 
+                    type="number" 
+                    class="w-full py-2.5 pl-8 pr-3 bg-slate-50 border border-slate-200 rounded-xl font-medium text-slate-900 text-xs focus:bg-white focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+              </div>
+            </div>
+            <p class="text-[10px] text-slate-400 mt-2 italic">
+              *Tarif komisi ini akan otomatis dihitung saat karyawan memproses cucian di menu Workstation.
+            </p>
+          </div>
 
           <div class="pt-4 border-t border-slate-100 flex justify-end">
             <button 
@@ -351,6 +397,9 @@ const form = useForm({
   receipt_paper_size: props.outlet?.receipt_paper_size || '58mm',
   is_wa_enabled: props.outlet?.is_wa_enabled || false,
   wa_api_token: props.outlet?.wa_api_token || '',
+  commission_washing: props.outlet?.commission_washing || 500,
+  commission_ironing: props.outlet?.commission_ironing || 1000,
+  commission_packing: props.outlet?.commission_packing || 200,
 });
 
 function submit() {
