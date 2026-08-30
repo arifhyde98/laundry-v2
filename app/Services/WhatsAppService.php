@@ -2,91 +2,128 @@
 
 namespace App\Services;
 
-use App\Models\Order;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class WhatsAppService
 {
     /**
-     * Send Order Received Confirmation Message
+     * Send a WhatsApp message using Fonnte API and log it.
      */
-    public function sendOrderReceivedNotification(Order $order): bool
+    public static function send(string $target, string $message, string $token, ?int $orderId = null, string $messageType = 'general'): bool
     {
-        $customer = $order->customer;
-        if (!$customer || !$customer->phone) return false;
-
-        $trackingUrl = url('/track/' . $order->invoice_code);
-        $totalFormatted = 'Rp ' . number_format($order->grand_total, 0, ',', '.');
-        $paymentStatusText = $order->payment_status === 'paid' ? 'LUNAS' : 'BELUM LUNAS';
-        $estDate = $order->estimated_completion ? $order->estimated_completion->format('d M Y H:i') : '-';
-
-        $message = "Halo Kak *{$customer->name}*,\n\n"
-            . "Terima kasih telah mempercayakan cucian Anda di *Laundry Express*.\n"
-            . "Pesanan Anda telah kami terima:\n\n"
-            . "📄 *No. Invoice:* {$order->invoice_code}\n"
-            . "⚖️ *Total Berat/Qty:* {$order->total_weight_qty} Kg/Pcs\n"
-            . "💰 *Total Biaya:* {$totalFormatted} ({$paymentStatusText})\n"
-            . "⏰ *Estimasi Selesai:* {$estDate}\n\n"
-            . "🔎 Lacak progres cucian Anda secara *real-time* di sini:\n"
-            . "{$trackingUrl}\n\n"
-            . "_Pesan otomatis oleh Laundry Express POS._";
-
-        return $this->sendMessage($customer->phone, $message);
-    }
-
-    /**
-     * Send Order Ready for Pickup Notification
-     */
-    public function sendOrderReadyNotification(Order $order): bool
-    {
-        $customer = $order->customer;
-        if (!$customer || !$customer->phone) return false;
-
-        $totalFormatted = 'Rp ' . number_format($order->grand_total, 0, ',', '.');
-        $paidFormatted = 'Rp ' . number_format($order->paid_amount, 0, ',', '.');
-        $remainingFormatted = 'Rp ' . number_format($order->remaining_amount, 0, ',', '.');
-        $rackCode = $order->rack ? $order->rack->rack_code : 'Meja Kasir';
-
-        $message = "Halo Kak *{$customer->name}*,\n\n"
-            . "🎉 Kabar gembira! Cucian Anda dengan nomor invoice *{$order->invoice_code}* sudah *SELESAI, BERSIH, & WANGI*.\n\n"
-            . "📦 *Lokasi Pengambilan:* {$rackCode}\n"
-            . "💰 *Total Tagihan:* {$totalFormatted}\n"
-            . "💵 *Sisa Pembayaran:* {$remainingFormatted}\n\n"
-            . "Silakan tunjukkan pesan ini atau struk nota saat pengambilan di kasir. Terima kasih!";
-
-        return $this->sendMessage($customer->phone, $message);
-    }
-
-    /**
-     * Dispatch WhatsApp message (Gateway wrapper)
-     */
-    public function sendMessage(string $phone, string $message): bool
-    {
-        // Normalize phone number to 62xxx
-        $cleanPhone = preg_replace('/[^0-9]/', '', $phone);
-        if (str_starts_with($cleanPhone, '0')) {
-            $cleanPhone = '62' . substr($cleanPhone, 1);
+        if (empty($token) || empty($target)) {
+            return false;
         }
 
-        // Log message for audit / development simulation
-        Log::info("WhatsApp Gateway Dispatched to [{$cleanPhone}]:\n" . $message);
+        try {
+            $response = Http::withHeaders([
+                'Authorization' => $token,
+            ])->post('https://api.fonnte.com/send', [
+                'target' => $target,
+                'message' => $message,
+                'countryCode' => '62',
+            ]);
 
-        // If webhook API key is configured in .env (e.g. Fonnte / Wablas), trigger HTTP POST
-        $apiKey = config('services.whatsapp.api_key');
-        if ($apiKey) {
-            try {
-                Http::withHeaders(['Authorization' => $apiKey])
-                    ->post('https://api.fonnte.com/send', [
-                        'target' => $cleanPhone,
-                        'message' => $message,
-                    ]);
-            } catch (\Exception $e) {
-                Log::error('WhatsApp API Error: ' . $e->getMessage());
+            $result = $response->json();
+            $isSuccess = isset($result['status']) && $result['status'] === true;
+
+            \App\Models\WhatsappLog::create([
+                'order_id' => $orderId,
+                'target_phone' => $target,
+                'message_type' => $messageType,
+                'status' => $isSuccess ? 'success' : 'failed',
+                'response_payload' => json_encode($result),
+            ]);
+
+            if ($isSuccess) {
+                Log::info("WhatsApp Notification ({$messageType}) sent successfully to {$target}.");
+                return true;
             }
+
+            Log::error("Failed to send WhatsApp ({$messageType}) to {$target}: " . json_encode($result));
+            return false;
+
+        } catch (\Exception $e) {
+            \App\Models\WhatsappLog::create([
+                'order_id' => $orderId,
+                'target_phone' => $target,
+                'message_type' => $messageType,
+                'status' => 'failed',
+                'response_payload' => json_encode(['error' => $e->getMessage()]),
+            ]);
+            
+            Log::error("WhatsAppService Exception: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Helper to send Order Ready notification
+     */
+    public function sendOrderReadyNotification(\App\Models\Order $order): bool
+    {
+        // Get the single outlet config
+        $outlet = \App\Models\Outlet::first();
+        
+        if (!$outlet || !$outlet->is_wa_enabled || empty($outlet->wa_api_token)) {
+            Log::info("WA is disabled or token missing.");
+            return false;
         }
 
-        return true;
+        $customer = $order->customer;
+        if (!$customer || empty($customer->phone)) {
+            Log::info("Customer phone is missing for order {$order->id}");
+            return false;
+        }
+
+        // Compose message
+        $amount = number_format($order->grand_total, 0, ',', '.');
+        $statusText = $order->payment_status === 'paid' ? 'SUDAH LUNAS' : "BELUM LUNAS (Tagihan: Rp {$amount})";
+
+        $message = "Halo Kak *{$customer->name}*,\n\n"
+                 . "Cucian Anda dengan nomor resi *{$order->invoice_code}* sudah *SIAP DIAMBIL* di *{$outlet->name}*.\n\n"
+                 . "Status Pembayaran: *{$statusText}*\n\n"
+                 . "Terima kasih telah mempercayakan cucian Anda kepada kami!\n"
+                 . "_Pesan otomatis dari {$outlet->name}_";
+
+        return self::send($customer->phone, $message, $outlet->wa_api_token, $order->id, 'ready');
+    }
+
+    /**
+     * Helper to send Order Received (Baru Masuk) notification
+     */
+    public function sendOrderReceivedNotification(\App\Models\Order $order): bool
+    {
+        // Get the single outlet config
+        $outlet = \App\Models\Outlet::first();
+        
+        if (!$outlet || !$outlet->is_wa_enabled || empty($outlet->wa_api_token)) {
+            Log::info("WA is disabled or token missing.");
+            return false;
+        }
+
+        $customer = $order->customer;
+        if (!$customer || empty($customer->phone)) {
+            Log::info("Customer phone is missing for order {$order->id}");
+            return false;
+        }
+
+        // Compose message
+        $amount = number_format($order->grand_total, 0, ',', '.');
+        $statusText = $order->payment_status === 'paid' ? 'SUDAH LUNAS' : "BELUM LUNAS (Sisa Tagihan: Rp " . number_format($order->grand_total - $order->paid_amount, 0, ',', '.') . ")";
+        $qtyText = $order->total_weight_qty . " Kg/Pcs";
+
+        $message = "Halo Kak *{$customer->name}*,\n\n"
+                 . "Pesanan laundry Anda telah kami terima di *{$outlet->name}* dengan rincian berikut:\n\n"
+                 . "🔹 No. Resi: *{$order->invoice_code}*\n"
+                 . "🔹 Berat/Jml: *{$qtyText}*\n"
+                 . "🔹 Total Biaya: *Rp {$amount}*\n"
+                 . "🔹 Status: *{$statusText}*\n\n"
+                 . "Kami akan segera memproses cucian Anda. Notifikasi selanjutnya akan dikirim saat cucian sudah siap diambil.\n\n"
+                 . "Terima kasih!\n"
+                 . "_Pesan otomatis dari {$outlet->name}_";
+
+        return self::send($customer->phone, $message, $outlet->wa_api_token, $order->id, 'received');
     }
 }
-

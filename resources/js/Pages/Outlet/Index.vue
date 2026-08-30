@@ -52,6 +52,33 @@
           </div>
 
           <div class="pt-3 border-t border-slate-100">
+            <h3 class="font-bold text-slate-900 text-sm mb-3 flex items-center gap-1.5 text-emerald-600">
+              <MessageCircle class="w-4 h-4" />
+              <span>Integrasi WhatsApp Gateway</span>
+            </h3>
+
+            <div class="space-y-3">
+              <label class="flex items-center gap-2 bg-emerald-50 p-3 rounded-xl border border-emerald-100 cursor-pointer">
+                <input type="checkbox" v-model="form.is_wa_enabled" class="rounded text-emerald-600 focus:ring-emerald-500 w-4 h-4" />
+                <span class="font-bold text-emerald-900 text-xs">Aktifkan Notifikasi WhatsApp Otomatis ke Pelanggan</span>
+              </label>
+
+              <div v-if="form.is_wa_enabled" class="pl-2 border-l-2 border-emerald-200 ml-1">
+                <label class="font-bold text-slate-700 block mb-1">API Token (Fonnte / Gateway)</label>
+                <input 
+                  v-model="form.wa_api_token" 
+                  type="text" 
+                  placeholder="Masukkan token API..." 
+                  class="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl font-mono text-slate-900 text-xs focus:bg-white focus:ring-2 focus:ring-emerald-500"
+                />
+                <p class="text-[10px] text-slate-400 mt-1 italic">
+                  *Gunakan provider pihak ketiga seperti Fonnte untuk mengirim notifikasi otomatis saat pesanan "Siap Diambil".
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div class="pt-3 border-t border-slate-100">
             <h3 class="font-bold text-slate-900 text-sm mb-3 flex items-center gap-1.5 text-sky-700">
               <Printer class="w-4 h-4" />
               <span>Kustomisasi Struk Thermal Kasir</span>
@@ -201,6 +228,63 @@
       </div>
     </div>
 
+    <!-- WhatsApp Logs Area -->
+    <div v-if="form.is_wa_enabled" class="mt-8 bg-white border border-slate-200 p-6 rounded-2xl shadow-sm">
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <h3 class="font-bold text-slate-900 text-base flex items-center gap-2">
+            <MessageCircle class="w-5 h-5 text-emerald-600" />
+            <span>Riwayat Pengiriman WhatsApp (20 Terakhir)</span>
+          </h3>
+          <p class="text-xs text-slate-500 mt-1">
+            Pantau status keberhasilan atau kegagalan pengiriman pesan otomatis ke pelanggan.
+          </p>
+        </div>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm text-slate-600">
+          <thead class="bg-slate-50 text-slate-400 uppercase text-[11px] font-bold tracking-wider">
+            <tr>
+              <th class="px-5 py-3.5">Tanggal</th>
+              <th class="px-5 py-3.5">No. HP Tujuan</th>
+              <th class="px-5 py-3.5">Tipe Pesan</th>
+              <th class="px-5 py-3.5">Terkait Order</th>
+              <th class="px-5 py-3.5">Status</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr v-for="log in waLogs" :key="log.id" class="hover:bg-slate-50 transition-colors">
+              <td class="px-5 py-3 whitespace-nowrap text-xs">
+                {{ new Date(log.created_at).toLocaleString('id-ID') }}
+              </td>
+              <td class="px-5 py-3 font-mono text-xs font-semibold text-slate-700">
+                {{ log.target_phone }}
+              </td>
+              <td class="px-5 py-3 uppercase text-[10px] font-bold tracking-wider">
+                {{ log.message_type }}
+              </td>
+              <td class="px-5 py-3 text-xs">
+                <Link v-if="log.order_id" :href="`/orders/${log.order_id}`" class="text-sky-600 font-bold hover:underline">
+                  {{ log.order?.invoice_code || '#' + log.order_id }}
+                </Link>
+                <span v-else class="text-slate-400">-</span>
+              </td>
+              <td class="px-5 py-3 text-xs">
+                <span v-if="log.status === 'success'" class="px-2 py-1 bg-emerald-50 text-emerald-600 border border-emerald-200 rounded font-bold uppercase tracking-wider text-[10px]">Sukses</span>
+                <span v-else class="px-2 py-1 bg-rose-50 text-rose-600 border border-rose-200 rounded font-bold uppercase tracking-wider text-[10px]" :title="log.response_payload">Gagal</span>
+              </td>
+            </tr>
+            <tr v-if="!waLogs || waLogs.length === 0">
+              <td colspan="5" class="px-5 py-8 text-center text-slate-400 text-sm">
+                Belum ada riwayat pengiriman WA.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
     <!-- Danger Zone / Dev Area -->
     <div class="mt-8 bg-rose-50/50 border border-rose-200 p-6 rounded-2xl shadow-sm">
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -242,13 +326,17 @@ import { useForm, router } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import ConfirmModal from '@/Components/ConfirmModal.vue';
 import { 
-  Store, Printer, Sparkles, QrCode, CheckCircle2, AlertTriangle, Trash2 
+  Store, Printer, Sparkles, QrCode, CheckCircle2, AlertTriangle, Trash2, MessageCircle 
 } from 'lucide-vue-next';
 
 const props = defineProps({
   outlet: {
     type: Object,
     default: () => ({})
+  },
+  waLogs: {
+    type: Array,
+    default: () => []
   }
 });
 
@@ -261,6 +349,8 @@ const form = useForm({
   receipt_header: props.outlet?.receipt_header || 'Cucian Bersih, Wangi, & Higienis',
   receipt_footer: props.outlet?.receipt_footer || 'Perhatian: 1. Komplain maks 1x24 jam setelah barang diambil. 2. Cucian tidak diambil > 30 hari di luar tanggung jawab kami.',
   receipt_paper_size: props.outlet?.receipt_paper_size || '58mm',
+  is_wa_enabled: props.outlet?.is_wa_enabled || false,
+  wa_api_token: props.outlet?.wa_api_token || '',
 });
 
 function submit() {

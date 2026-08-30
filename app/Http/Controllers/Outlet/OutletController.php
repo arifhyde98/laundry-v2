@@ -23,8 +23,14 @@ class OutletController extends Controller
             ]
         );
 
+        $waLogs = \App\Models\WhatsappLog::with('order:id,invoice_code')
+            ->orderBy('id', 'desc')
+            ->take(20)
+            ->get();
+
         return Inertia::render('Outlet/Index', [
             'outlet' => $outlet,
+            'waLogs' => $waLogs,
         ]);
     }
 
@@ -39,6 +45,8 @@ class OutletController extends Controller
             'receipt_header' => ['nullable', 'string', 'max:255'],
             'receipt_footer' => ['nullable', 'string'],
             'receipt_paper_size' => ['required', 'in:58mm,80mm'],
+            'is_wa_enabled' => ['boolean'],
+            'wa_api_token' => ['nullable', 'string', 'max:255'],
         ]);
 
         $outlet->update($validated);
