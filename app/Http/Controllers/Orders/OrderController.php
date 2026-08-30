@@ -104,7 +104,7 @@ class OrderController extends Controller
                 'received_by' => Auth::id(),
                 'amount_paid' => $amount,
                 'payment_method' => $validated['payment_method'],
-                'notes' => $validated['notes'],
+                'notes' => $validated['notes'] ?? null,
                 'paid_at' => now(),
             ]);
 
