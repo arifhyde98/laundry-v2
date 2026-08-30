@@ -61,17 +61,24 @@ Setelah pakaian selesai diproses (status selesai), Anda bisa menempatkan pakaian
 3. Jika pelanggan sudah mengambil pakaiannya, ubah status pesanan menjadi **Diambil** (Completed).
 
 ---
-
+### C. Cetak Struk Cepat (Direct Kiosk Printing)
+Agar saat tombol "Cetak Struk" diklik kasir, mesin printer langsung mencetak tanpa memunculkan jendela *preview browser* (layaknya sistem POS desktop asli), Anda perlu mengubah *shortcut* browser Chrome di komputer Kasir:
+1. Klik kanan ikon Google Chrome di Desktop Anda, pilih **Properties**.
+2. Pada kolom **Target**, tambahkan spasi dan kode `--kiosk-printing` di bagian paling belakang (Contoh: `"C:\Program Files\Google\Chrome\Application\chrome.exe" --kiosk-printing`).
+3. Buka Chrome melalui ikon tersebut, lakukan cetak struk sekali, dan Chrome tidak akan bertanya lagi.
 ## 7. Fitur Owner & Manajer
 Pemilik (Owner) memiliki akses ke fitur-fitur khusus yang tidak dapat diakses kasir:
 
-### A. Manajemen Outlet & Struk
-* Buka menu **Outlet**. Di sini Anda bisa mengatur nama laundry, alamat, nomor telepon, logo, dan teks footer/header pada struk cetak.
-* Terdapat juga kolom untuk **WhatsApp API Token** untuk integrasi pengiriman pesan otomatis.
+### A. Manajemen Outlet & WhatsApp Gateway
+* Buka menu **Outlet**. Di sini Anda bisa mengatur nama laundry, alamat, nomor telepon, logo, dan teks *footer/header* pada struk cetak.
+* **Integrasi WhatsApp:** Masukkan **Token API Fonnte** Anda dan centang tombol "Aktifkan Kirim WA Otomatis". Sistem akan otomatis nge-WA pelanggan setiap kali pesanan baru dibuat atau saat pakaian sudah siap diambil.
+* Di halaman ini juga terdapat tabel **Log Riwayat Pengiriman WA** untuk memastikan apakah pesan sukses terkirim ke pelanggan atau gagal.
 
 ### B. Laporan & Keuangan (Reports & Expenses)
-* **Expenses / Pengeluaran**: Catat pengeluaran operasional (seperti beli bensin, listrik, makan karyawan) agar laporan keuangan lebih akurat.
-* **Reports / Laporan**: Lihat laporan laba rugi, ekspor laporan ke Excel/PDF berdasarkan rentang tanggal tertentu.
+* **Expenses / Pengeluaran**: Catat pengeluaran operasional (seperti beli bensin, listrik, komisi tambahan) agar laporan laba/rugi sangat presisi.
+* **Reports / Laporan**: Lihat 4 Kartu Metrik (Omset, Kas Masuk, Beban Operasional, dan **Laba Bersih Riil**).
+* Dilengkapi dengan tabel **Rekap Z-Report Shift Kasir** untuk melacak selisih uang di laci.
+* **Ekspor Data:** Anda dapat mencetak laporan keuangan ke kertas A4 (dengan desain rapi) atau mengunduhnya dalam format Excel (CSV).
 
 ### C. Manajemen Inventaris
 * Buka menu **Inventory**. Anda bisa mencatat stok bahan kimia (deterjen, pewangi).

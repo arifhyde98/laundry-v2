@@ -14,8 +14,10 @@ Aplikasi ini dibangun menggunakan tumpukan teknologi modern (**Laravel 11+ / 13*
   Sistem antrian dan pembaruan status cucian secara real-time untuk bagian produksi.
 - **Manajemen Pelanggan & Deposit**
   Pencatatan data pelanggan beserta sistem saldo/deposit untuk kemudahan pembayaran di masa depan.
+- **WhatsApp API Gateway (Fonnte)**
+  Otomatis mengirimkan notifikasi WhatsApp ke pelanggan saat pesanan dibuat (diterima) dan saat cucian sudah siap diambil (ready). Lengkap dengan tabel pemantauan riwayat log pengiriman pesan.
 - **Manajemen Outlet & Struk Kustom**
-  Kustomisasi profil outlet, pengaturan kustomisasi struk digital/cetak, dan integrasi WhatsApp API Token untuk notifikasi.
+  Kustomisasi profil outlet, pengaturan teks struk digital/cetak (kertas 58mm), dan saklar (toggle) aktif/nonaktifkan notifikasi WA.
 - **Manajemen Inventaris & Pengeluaran**
   Pemantauan stok bahan baku (chemical/deterjen) beserta fitur penyesuaian stok, serta pencatatan pengeluaran operasional (Expenses).
 - **Sistem Penyimpanan (Rak)**
