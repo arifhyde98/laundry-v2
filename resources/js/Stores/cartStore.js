@@ -57,6 +57,7 @@ export const useCartStore = defineStore('cart', () => {
     paidAmount.value = 0;
     notes.value = '';
     paymentType.value = 'paid';
+    paymentMethod.value = 'cash';
   }
 
   // Computed Totals

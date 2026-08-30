@@ -89,6 +89,7 @@ class CustomerController extends Controller
         DB::beginTransaction();
 
         try {
+            $customer = Customer::lockForUpdate()->findOrFail($id);
             $amount = (float)$validated['amount'];
             $customer->increment('deposit_balance', $amount);
 

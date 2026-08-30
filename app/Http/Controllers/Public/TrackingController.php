@@ -15,7 +15,7 @@ class TrackingController extends Controller
         $order = null;
 
         if ($searchCode) {
-            $order = Order::with(['customer', 'rack', 'items.service', 'trackingLogs'])
+            $order = Order::with(['customer:id,name', 'rack', 'items.service', 'trackingLogs'])
                 ->where('invoice_code', $searchCode)
                 ->first();
         }

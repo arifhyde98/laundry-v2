@@ -289,7 +289,21 @@
           </div>
         </div>
 
-        <!-- Payment Method (If paid or partial) -->
+        <!-- Partial DP Input Box -->
+        <div v-if="cart.paymentType === 'partial'" class="p-3 bg-amber-50 rounded-xl border border-amber-200 space-y-1">
+          <label class="block text-xs font-bold text-amber-900">Nominal Uang Muka (DP):</label>
+          <input 
+            v-model.number="partialAmount" 
+            type="number" 
+            :max="cart.grandTotal" 
+            min="1000" 
+            class="w-full py-2 px-3 border border-amber-300 rounded-xl text-sm font-bold text-slate-900 bg-white" 
+          />
+          <div class="flex justify-between text-[11px] text-amber-800 font-semibold pt-1">
+            <span>Sisa Belum Lunas:</span>
+            <span>Rp {{ formatNumber(Math.max(0, cart.grandTotal - partialAmount)) }}</span>
+          </div>
+        </div>
         <div v-if="cart.paymentType !== 'unpaid'">
           <label class="block text-xs font-bold text-slate-700 mb-1">Metode Pembayaran</label>
           <div class="grid grid-cols-4 gap-1.5">
@@ -470,6 +484,7 @@ const showOpenShiftModal = ref(false);
 const showCloseShiftModal = ref(false);
 const isSubmitting = ref(false);
 const receivedCash = ref(0);
+const partialAmount = ref(0);
 
 const shiftForm = useForm({
   starting_cash: 50000,
@@ -520,6 +535,7 @@ function addServiceToCart(service) {
 
 function openPaymentModal() {
   receivedCash.value = cart.grandTotal;
+  partialAmount.value = Math.max(1000, Math.floor(cart.grandTotal / 2));
   showPaymentModal.value = true;
 }
 
@@ -527,17 +543,30 @@ function setPaymentType(type) {
   cart.paymentType = type;
   if (type === 'paid') {
     cart.paidAmount = cart.grandTotal;
+  } else if (type === 'partial') {
+    cart.paidAmount = partialAmount.value;
   } else if (type === 'unpaid') {
     cart.paidAmount = 0;
   }
 }
 
 const cashChange = computed(() => {
-  return Number(receivedCash.value) - cart.grandTotal;
+  const targetBill = cart.paymentType === 'partial' ? Number(partialAmount.value) : cart.grandTotal;
+  return Number(receivedCash.value) - targetBill;
 });
 
 function submitCheckout() {
   isSubmitting.value = true;
+
+  let computedPaid = 0;
+  if (cart.paymentType === 'paid') {
+    computedPaid = cart.grandTotal;
+  } else if (cart.paymentType === 'partial') {
+    computedPaid = Math.min(cart.grandTotal, Math.max(1, Number(partialAmount.value)));
+  } else {
+    computedPaid = 0;
+  }
+
   const payload = {
     customer_id: cart.customer.id,
     items: cart.items,
@@ -545,7 +574,7 @@ function submitCheckout() {
     delivery_fee: cart.deliveryFee,
     payment_status: cart.paymentType,
     payment_method: cart.paymentType === 'unpaid' ? 'cash' : cart.paymentMethod,
-    paid_amount: cart.paymentType === 'paid' ? cart.grandTotal : (cart.paymentType === 'unpaid' ? 0 : receivedCash.value),
+    paid_amount: computedPaid,
     notes: cart.notes,
   };
 

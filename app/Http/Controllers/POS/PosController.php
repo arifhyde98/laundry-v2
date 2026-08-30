@@ -69,7 +69,7 @@ class PosController extends Controller
         DB::beginTransaction();
 
         try {
-            $customer = Customer::findOrFail($validated['customer_id']);
+            $customer = Customer::lockForUpdate()->findOrFail($validated['customer_id']);
 
             // Calculate Totals
             $subtotal = 0;
@@ -121,6 +121,7 @@ class PosController extends Controller
             // Create Order
             $order = Order::create([
                 'invoice_code' => $invoiceCode,
+                'outlet_id' => 1,
                 'customer_id' => $customer->id,
                 'user_id' => Auth::id(),
                 'shift_id' => $activeShift ? $activeShift->id : null,
