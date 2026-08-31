@@ -208,7 +208,7 @@
     </div>
 
     <!-- Hidden Thermal Receipt for Printing -->
-    <div id="thermal-receipt" class="hidden print:block print:w-72 p-2 font-mono text-xs text-black">
+    <div id="thermal-receipt" class="hidden print:block p-2 font-mono text-xs text-black" :style="{ width: order.outlet?.receipt_paper_size || $page.props.outlet?.receipt_paper_size || '58mm' }">
       <div class="text-center pb-2 border-b border-dashed border-black">
         <h2 class="font-bold text-sm uppercase">{{ order.outlet?.name || $page.props.outlet?.name || 'LAUNDRY EXPRESS' }}</h2>
         <p v-if="order.outlet?.receipt_header || $page.props.outlet?.receipt_header" class="text-[9px] italic font-semibold">
