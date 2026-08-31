@@ -126,4 +126,37 @@ class WhatsAppService
 
         return self::send($customer->phone, $message, $outlet->wa_api_token, $order->id, 'received');
     }
+
+    /**
+     * Helper to send Payment Received notification
+     */
+    public function sendPaymentReceivedNotification(\App\Models\OrderPayment $payment): bool
+    {
+        $outlet = \App\Models\Outlet::first();
+        
+        if (!$outlet || !$outlet->is_wa_enabled || empty($outlet->wa_api_token)) {
+            return false;
+        }
+
+        $order = $payment->order;
+        if (!$order) return false;
+
+        $customer = $order->customer;
+        if (!$customer || empty($customer->phone)) {
+            return false;
+        }
+
+        $amountFormatted = number_format($payment->amount_paid, 0, ',', '.');
+        $remainingFormatted = number_format(max(0, $order->grand_total - $order->paid_amount), 0, ',', '.');
+        $statusText = $order->payment_status === 'paid' ? 'SUDAH LUNAS ✅' : "Sisa Tagihan: Rp {$remainingFormatted}";
+
+        $message = "Halo Kak *{$customer->name}*,\n\n"
+                 . "Pembayaran sebesar *Rp {$amountFormatted}* untuk resi *{$order->invoice_code}* telah *BERHASIL DITERIMA* via {$payment->payment_method}.\n\n"
+                 . "🔹 Status Pembayaran: *{$statusText}*\n\n"
+                 . "Terima kasih telah melakukan pembayaran!\n"
+                 . "_Pesan otomatis dari {$outlet->name}_";
+
+        return self::send($customer->phone, $message, $outlet->wa_api_token, $order->id, 'payment_received');
+    }
 }
+

@@ -12,6 +12,34 @@
       </div>
     </div>
 
+    <!-- Webhook Notification Info Card for Clients -->
+    <div class="mb-6 p-5 bg-gradient-to-r from-indigo-900 to-slate-900 rounded-2xl text-white shadow-lg relative overflow-hidden">
+      <div class="absolute -right-10 -bottom-10 w-48 h-48 bg-indigo-500/20 rounded-full blur-2xl pointer-events-none"></div>
+      <div class="relative z-10 space-y-3">
+        <div class="flex items-center gap-2 text-indigo-300 font-bold text-xs uppercase tracking-wider">
+          <LinkIcon class="w-4 h-4" />
+          <span>URL Webhook Callback (Notification URL)</span>
+        </div>
+        <p class="text-xs text-slate-300 leading-relaxed max-w-3xl">
+          Salin URL di bawah ini lalu tempelkan (*paste*) di Dashboard Midtrans Anda pada menu <strong>Settings &gt; Configuration &gt; Payment Notification URL</strong> agar status pembayaran otomatis ter-update saat pelanggan membayar.
+        </p>
+
+        <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 pt-1">
+          <div class="bg-slate-950/80 px-3.5 py-2.5 rounded-xl font-mono text-xs text-indigo-300 border border-indigo-500/30 flex-1 flex items-center justify-between overflow-x-auto">
+            <span>{{ webhookUrl }}</span>
+          </div>
+          <button 
+            @click="copyWebhookUrl" 
+            class="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 shrink-0 shadow-md"
+          >
+            <CheckCircle v-if="copied" class="w-4 h-4 text-emerald-300" />
+            <Copy v-else class="w-4 h-4" />
+            <span>{{ copied ? 'Tersalin!' : 'Salin URL Webhook' }}</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
       <div 
         v-for="gateway in gateways" 
@@ -87,9 +115,10 @@
             <button 
               type="submit" 
               :disabled="forms[gateway.id].processing"
-              class="px-5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold transition-all disabled:opacity-50"
+              class="px-5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold transition-all disabled:opacity-50 flex items-center gap-2"
             >
-              {{ forms[gateway.id].processing ? 'Menyimpan...' : 'Simpan Kredensial' }}
+              <CheckCircle v-if="!forms[gateway.id].processing" class="w-4 h-4 text-emerald-400" />
+              <span>{{ forms[gateway.id].processing ? 'Menyimpan...' : 'Simpan Kredensial' }}</span>
             </button>
           </div>
         </form>
@@ -99,16 +128,32 @@
 </template>
 
 <script setup>
-import { reactive } from 'vue';
+import { ref, reactive, computed } from 'vue';
 import { useForm } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
-import { CreditCard } from 'lucide-vue-next';
+import { CreditCard, Link as LinkIcon, Copy, CheckCircle } from 'lucide-vue-next';
 
 const props = defineProps({
   gateways: Array,
 });
 
 const forms = reactive({});
+const copied = ref(false);
+
+const webhookUrl = computed(() => {
+  if (typeof window !== 'undefined') {
+    return `${window.location.origin}/api/payment/midtrans/notification`;
+  }
+  return '/api/payment/midtrans/notification';
+});
+
+function copyWebhookUrl() {
+  navigator.clipboard.writeText(webhookUrl.value);
+  copied.value = true;
+  setTimeout(() => {
+    copied.value = false;
+  }, 2500);
+}
 
 props.gateways.forEach(gw => {
   forms[gw.id] = useForm({

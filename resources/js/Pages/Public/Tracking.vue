@@ -79,6 +79,25 @@
             <span class="font-semibold text-white">Rp {{ formatNumber(item.subtotal) }}</span>
           </div>
         </div>
+
+        <!-- Online Payment Section (if unpaid/partial) -->
+        <div v-if="order.payment_status !== 'paid' && activeGateway" class="border-t border-slate-800 pt-5 space-y-3">
+          <div class="p-4 bg-gradient-to-r from-sky-950 to-slate-900 border border-sky-500/30 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xl">
+            <div>
+              <p class="text-xs font-bold text-sky-400 uppercase tracking-wider">Bayar Online Langsung</p>
+              <p class="text-xs text-slate-300">Gunakan QRIS (BCA, Mandiri, GoPay, OVO, ShopeePay) atau Virtual Account.</p>
+              <p class="text-sm font-extrabold text-white mt-1">Tagihan: Rp {{ formatNumber(order.grand_total - order.paid_amount) }}</p>
+            </div>
+            <button 
+              @click="payOnline" 
+              :disabled="loadingPay"
+              class="w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-sky-500 to-cyan-500 hover:from-sky-400 hover:to-cyan-400 text-white font-bold text-xs rounded-xl shadow-lg shadow-sky-500/25 transition-all flex items-center justify-center gap-2 shrink-0 disabled:opacity-50"
+            >
+              <CreditCard class="w-4 h-4" />
+              <span>{{ loadingPay ? 'Memuat Gateway...' : 'Bayar Sekarang' }}</span>
+            </button>
+          </div>
+        </div>
       </div>
 
       <!-- Not Found State -->
@@ -97,9 +116,10 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 import { router } from '@inertiajs/vue3';
-import { Droplets, Search, Boxes, AlertCircle } from 'lucide-vue-next';
+import { Droplets, Search, Boxes, AlertCircle, CreditCard } from 'lucide-vue-next';
+import { payWithMidtrans } from '@/Utils/midtrans';
 
 const props = defineProps({
   searchCode: String,
@@ -107,6 +127,8 @@ const props = defineProps({
 });
 
 const searchQuery = ref(props.searchCode || '');
+const activeGateway = ref(null);
+const loadingPay = ref(false);
 
 const steps = [
   { key: 'received', title: '1. Diterima di Kasir', desc: 'Pakaian diterima dan ditimbang di kasir.' },
@@ -128,6 +150,18 @@ const statusWeights = {
   'completed': 7,
 };
 
+onMounted(async () => {
+  try {
+    const res = await fetch('/api/payment/active-gateway');
+    const data = await res.json();
+    if (data.active_gateway && data.active_gateway.is_active) {
+      activeGateway.value = data.active_gateway;
+    }
+  } catch (e) {
+    console.error('Failed to load active gateway:', e);
+  }
+});
+
 function formatNumber(num) {
   return Number(num || 0).toLocaleString('id-ID');
 }
@@ -147,6 +181,48 @@ function isStepPassed(stepKey) {
 function searchInvoice() {
   if (!searchQuery.value) return;
   router.get(`/track/${searchQuery.value.trim()}`);
+}
+
+async function payOnline() {
+  if (!props.order) return;
+  loadingPay.value = true;
+  try {
+    const res = await fetch('/api/payment/snap-token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: JSON.stringify({
+        order_id: props.order.id,
+      })
+    });
+    const data = await res.json();
+
+    if (data.status === 'success' && data.data?.snap_token) {
+      payWithMidtrans({
+        snapToken: data.data.snap_token,
+        clientKey: data.data.client_key,
+        mode: data.data.mode,
+        onSuccess: () => {
+          router.reload({ preserveScroll: true });
+        },
+        onPending: () => {
+          router.reload({ preserveScroll: true });
+        },
+        onError: () => {
+          alert('Pembayaran Gagal atau Dibatalkan.');
+        }
+      });
+    } else {
+      alert(data.message || 'Gagal mendapatkan Snap Token Midtrans.');
+    }
+  } catch (e) {
+    console.error(e);
+    alert('Terjadi kesalahan jaringan.');
+  } finally {
+    loadingPay.value = false;
+  }
 }
 </script>
 

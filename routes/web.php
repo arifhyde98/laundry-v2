@@ -21,6 +21,14 @@ use App\Http\Controllers\Public\TrackingController;
 // Public Routes
 Route::get('/track/{invoice?}', [TrackingController::class, 'show'])->name('public.track');
 
+// Public Payment API Routes (For Snap Token & Webhook Callbacks)
+Route::post('/api/payment/snap-token', [\App\Http\Controllers\Api\PaymentNotificationController::class, 'generateSnapToken'])->name('api.payment.snap-token');
+Route::post('/api/payment/midtrans/notification', [\App\Http\Controllers\Api\PaymentNotificationController::class, 'handleMidtransWebhook'])->name('api.payment.midtrans.notification');
+Route::get('/api/payment/active-gateway', function () {
+    $gateway = \App\Models\PaymentGateway::where('is_active', true)->first(['id', 'name', 'display_name', 'mode', 'client_key', 'is_active']);
+    return response()->json(['active_gateway' => $gateway]);
+});
+
 // Authentication Routes
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
 Route::post('/login', [AuthController::class, 'login'])->name('login.post');

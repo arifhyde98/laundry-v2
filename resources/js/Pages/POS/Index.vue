@@ -337,13 +337,16 @@
             </button>
           </div>
 
-          <!-- Dynamic QRIS Display Simulation -->
-          <div v-if="cart.paymentMethod === 'qris'" class="mt-3 p-3 bg-slate-50 rounded-xl border border-slate-200 text-center">
-            <p class="text-[11px] font-bold text-slate-700 mb-1">Pindai QRIS Dinamis (Auto-Check)</p>
-            <div class="w-32 h-32 bg-white border border-slate-300 rounded-lg mx-auto flex items-center justify-center p-2 shadow-xs">
-              <QrCode class="w-28 h-28 text-slate-900" />
+          <!-- Dynamic QRIS / Gateway Display -->
+          <div v-if="cart.paymentMethod === 'qris' || cart.paymentMethod === 'transfer'" class="mt-3 p-3 rounded-xl border text-center text-xs space-y-1" :class="activeGateway ? 'bg-indigo-50 border-indigo-200 text-indigo-900' : 'bg-slate-50 border-slate-200 text-slate-700'">
+            <div v-if="activeGateway" class="font-bold flex items-center justify-center gap-1 text-indigo-700">
+              <Sparkles class="w-3.5 h-3.5" />
+              <span>Gateway {{ activeGateway.display_name }} Aktif</span>
             </div>
-            <p class="text-[10px] text-slate-400 mt-1">Status pembayaran akan otomatis lunas saat discan</p>
+            <p v-else class="font-bold text-slate-700">Pembayaran {{ cart.paymentMethod.toUpperCase() }} Manual</p>
+            <p class="text-[10px] text-slate-500">
+              {{ activeGateway ? 'Transaksi akan dapat dibayar menggunakan QRIS / Virtual Account Midtrans.' : 'Kasir mengonfirmasi penerimaan dana secara manual.' }}
+            </p>
           </div>
 
           <!-- Cash Input & Quick Money Buttons -->
@@ -459,7 +462,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useForm, router } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { useCartStore } from '@/Stores/cartStore';
@@ -485,6 +488,19 @@ const showCloseShiftModal = ref(false);
 const isSubmitting = ref(false);
 const receivedCash = ref(0);
 const partialAmount = ref(0);
+const activeGateway = ref(null);
+
+onMounted(async () => {
+  try {
+    const res = await fetch('/api/payment/active-gateway');
+    const data = await res.json();
+    if (data.active_gateway && data.active_gateway.is_active) {
+      activeGateway.value = data.active_gateway;
+    }
+  } catch (e) {
+    console.error('Failed to fetch active gateway:', e);
+  }
+});
 
 const shiftForm = useForm({
   starting_cash: 50000,

@@ -268,14 +268,25 @@
           <div>
             <label class="font-semibold block mb-1">Metode Pembayaran</label>
             <select v-model="payForm.payment_method" class="w-full py-2 px-3 border rounded-xl font-medium">
-              <option value="cash">💵 Tunai</option>
-              <option value="qris">📱 QRIS</option>
-              <option value="transfer">🏦 Transfer</option>
+              <option value="cash">💵 Tunai (Kasir)</option>
+              <option value="qris">📱 QRIS / Transfer Manual</option>
+              <option v-if="activeGateway" value="midtrans">⚡ Midtrans Online (QRIS / VA Otomatis)</option>
             </select>
           </div>
+
+          <div v-if="payForm.payment_method === 'midtrans'" class="p-3 bg-indigo-50 border border-indigo-100 rounded-xl text-indigo-900 text-[11px] leading-relaxed">
+            Pop-up QRIS Dinamis / Virtual Account Midtrans akan muncul secara otomatis.
+          </div>
+
           <div class="flex gap-2 pt-2">
             <button type="button" @click="showPayModal = false" class="flex-1 py-2 bg-slate-100 rounded-xl">Batal</button>
-            <button type="submit" class="flex-1 py-2 bg-sky-600 text-white rounded-xl font-bold">Simpan Pembayaran</button>
+            <button 
+              type="submit" 
+              :disabled="loadingPay"
+              class="flex-1 py-2 bg-sky-600 hover:bg-sky-700 text-white rounded-xl font-bold transition-all disabled:opacity-50 flex items-center justify-center gap-1.5"
+            >
+              <span>{{ loadingPay ? 'Memproses...' : (payForm.payment_method === 'midtrans' ? 'Bayar Online' : 'Simpan Pembayaran') }}</span>
+            </button>
           </div>
         </form>
       </div>
@@ -284,12 +295,13 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
-import { Link, useForm } from '@inertiajs/vue3';
+import { ref, onMounted } from 'vue';
+import { Link, useForm, router } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { 
   ArrowLeft, Printer, MessageCircle, CreditCard, Boxes 
 } from 'lucide-vue-next';
+import { payWithMidtrans } from '@/Utils/midtrans';
 
 const props = defineProps({
   order: Object,
@@ -298,10 +310,24 @@ const props = defineProps({
 });
 
 const showPayModal = ref(false);
+const activeGateway = ref(null);
+const loadingPay = ref(false);
 
 const payForm = useForm({
   amount: Math.max(0, Number(props.order.grand_total) - Number(props.order.paid_amount)),
   payment_method: 'cash',
+});
+
+onMounted(async () => {
+  try {
+    const res = await fetch('/api/payment/active-gateway');
+    const data = await res.json();
+    if (data.active_gateway && data.active_gateway.is_active) {
+      activeGateway.value = data.active_gateway;
+    }
+  } catch (e) {
+    console.error('Failed to load active payment gateway:', e);
+  }
 });
 
 function formatNumber(num) {
@@ -364,12 +390,56 @@ function printThermalReceipt() {
   window.print();
 }
 
-function submitPayment() {
-  payForm.post(`/orders/${props.order.id}/pay`, {
-    onSuccess: () => {
-      showPayModal.value = false;
+async function submitPayment() {
+  if (payForm.payment_method === 'midtrans') {
+    loadingPay.value = true;
+    try {
+      const res = await fetch('/api/payment/snap-token', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+        },
+        body: JSON.stringify({
+          order_id: props.order.id,
+          amount: payForm.amount,
+        })
+      });
+      const data = await res.json();
+
+      if (data.status === 'success' && data.data?.snap_token) {
+        showPayModal.value = false;
+        payWithMidtrans({
+          snapToken: data.data.snap_token,
+          clientKey: data.data.client_key,
+          mode: data.data.mode,
+          onSuccess: () => {
+            router.reload({ preserveScroll: true });
+          },
+          onPending: () => {
+            router.reload({ preserveScroll: true });
+          },
+          onError: (err) => {
+            alert('Pembayaran Gagal atau Dibatalkan.');
+          }
+        });
+      } else {
+        alert(data.message || 'Gagal mendapatkan Snap Token Midtrans');
+      }
+    } catch (e) {
+      console.error(e);
+      alert('Terjadi kesalahan jaringan.');
+    } finally {
+      loadingPay.value = false;
     }
-  });
+  } else {
+    payForm.post(`/orders/${props.order.id}/pay`, {
+      onSuccess: () => {
+        showPayModal.value = false;
+      }
+    });
+  }
 }
 </script>
 
