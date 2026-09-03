@@ -56,7 +56,7 @@ class OrderController extends Controller
         ]);
     }
 
-    public function show($id, ReceiptService $receiptService)
+    public function show($id, Request $request, ReceiptService $receiptService)
     {
         $order = Order::with(['customer', 'user', 'rack', 'items.service', 'payments.receiver', 'trackingLogs.changer', 'rewashTickets'])
             ->findOrFail($id);
@@ -68,6 +68,7 @@ class OrderController extends Controller
             'order' => $order,
             'receipt' => $receiptData,
             'availableRacks' => $availableRacks,
+            'autoPrint' => (bool) $request->input('autoprint'),
         ]);
     }
 

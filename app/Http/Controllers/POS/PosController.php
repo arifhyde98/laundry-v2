@@ -191,7 +191,7 @@ class PosController extends Controller
                 \Illuminate\Support\Facades\Log::warning("WA notification failed for order {$order->id}: " . $waEx->getMessage());
             }
 
-            return redirect()->route('orders.show', $order->id)->with('success', "Order {$order->invoice_code} berhasil dibuat!");
+            return redirect()->route('orders.show', ['id' => $order->id, 'autoprint' => 1])->with('success', "Order {$order->invoice_code} berhasil dibuat!");
         } catch (\Exception $e) {
             DB::rollBack();
             return back()->with('error', 'Gagal memproses transaksi: ' . $e->getMessage());

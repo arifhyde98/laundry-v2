@@ -295,7 +295,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, nextTick } from 'vue';
 import { Link, useForm, router } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { 
@@ -307,6 +307,7 @@ const props = defineProps({
   order: Object,
   receipt: Object,
   availableRacks: Array,
+  autoPrint: Boolean,
 });
 
 const showPayModal = ref(false);
@@ -319,6 +320,21 @@ const payForm = useForm({
 });
 
 onMounted(async () => {
+  // Auto-print receipt trigger after POS checkout
+  const urlParams = new URLSearchParams(window.location.search);
+  const shouldAutoPrint = props.autoPrint || urlParams.get('autoprint') === '1' || urlParams.has('autoprint');
+
+  console.log('[AutoPrint] Checking status:', { prop: props.autoPrint, urlParam: urlParams.get('autoprint'), shouldAutoPrint });
+
+  if (shouldAutoPrint) {
+    nextTick(() => {
+      setTimeout(() => {
+        console.log('[AutoPrint] Triggering printThermalReceipt()...');
+        printThermalReceipt();
+      }, 250);
+    });
+  }
+
   try {
     const res = await fetch('/api/payment/active-gateway');
     const data = await res.json();
