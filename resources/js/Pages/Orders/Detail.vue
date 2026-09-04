@@ -269,9 +269,17 @@
             <label class="font-semibold block mb-1">Metode Pembayaran</label>
             <select v-model="payForm.payment_method" class="w-full py-2 px-3 border rounded-xl font-medium">
               <option value="cash">💵 Tunai (Kasir)</option>
+              <option value="deposit">💳 Saldo Deposit Pelanggan (Tersedia: Rp {{ formatNumber(order.customer?.deposit_balance || 0) }})</option>
               <option value="qris">📱 QRIS / Transfer Manual</option>
               <option v-if="activeGateway" value="midtrans">⚡ Midtrans Online (QRIS / VA Otomatis)</option>
             </select>
+          </div>
+
+          <div v-if="payForm.payment_method === 'deposit'" class="p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-900 text-[11px] leading-relaxed">
+            Saldo deposit pelanggan saat ini: <strong>Rp {{ formatNumber(order.customer?.deposit_balance || 0) }}</strong>.
+            <span v-if="(order.customer?.deposit_balance || 0) < payForm.amount" class="text-rose-600 block font-bold mt-1">
+              ⚠️ Saldo tidak mencukupi untuk nominal pembayaran ini!
+            </span>
           </div>
 
           <div v-if="payForm.payment_method === 'midtrans'" class="p-3 bg-indigo-50 border border-indigo-100 rounded-xl text-indigo-900 text-[11px] leading-relaxed">

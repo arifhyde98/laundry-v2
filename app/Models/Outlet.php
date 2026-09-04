@@ -8,6 +8,10 @@ class Outlet extends Model
 {
     protected $guarded = ['id'];
 
+    protected $hidden = [
+        'wa_api_token',
+    ];
+
     protected $casts = [
         'is_active' => 'boolean',
         'is_wa_enabled' => 'boolean',
@@ -31,4 +35,3 @@ class Outlet extends Model
         return $this->hasMany(Service::class);
     }
 }
-

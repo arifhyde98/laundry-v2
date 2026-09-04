@@ -28,14 +28,14 @@ class PaymentGatewayController extends Controller
                     'mode' => 'sandbox',
                     'created_at' => now(),
                     'updated_at' => now(),
-                ]
+                ],
             ]);
         }
 
-        $gateways = PaymentGateway::all();
+        $gateways = PaymentGateway::all()->makeVisible(['server_key']);
 
         return Inertia::render('PaymentGateways/Index', [
-            'gateways' => $gateways
+            'gateways' => $gateways,
         ]);
     }
 

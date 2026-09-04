@@ -23,7 +23,22 @@ class PaymentNotificationController extends Controller
 
         try {
             $order = Order::findOrFail($validated['order_id']);
-            $amount = isset($validated['amount']) ? (float) $validated['amount'] : null;
+            $remaining = max(0, (float) $order->grand_total - (float) $order->paid_amount);
+
+            if ($remaining <= 0) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Tagihan order ini sudah lunas.',
+                ], 422);
+            }
+
+            // Jika publik/tidak login, kunci pembayaran sebesar sisa tagihan penuh agar tidak bisa dimanipulasi
+            // Jika kasir login, nominal dibatasi maksimal sebesar sisa tagihan yang ada
+            if (! auth()->check()) {
+                $amount = $remaining;
+            } else {
+                $amount = isset($validated['amount']) ? min($remaining, (float) $validated['amount']) : $remaining;
+            }
 
             $snapData = $service->createSnapToken($order, $amount);
 
@@ -62,7 +77,7 @@ class PaymentNotificationController extends Controller
                 'message' => 'Notification invalid or ignored',
             ], 400);
         } catch (\Exception $e) {
-            Log::error('Midtrans Webhook Exception: ' . $e->getMessage());
+            Log::error('Midtrans Webhook Exception: '.$e->getMessage());
 
             return response()->json([
                 'status' => 'error',

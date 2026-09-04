@@ -8,6 +8,10 @@ class PaymentGateway extends Model
 {
     protected $guarded = ['id'];
 
+    protected $hidden = [
+        'server_key',
+    ];
+
     protected $casts = [
         'is_active' => 'boolean',
         'additional_config' => 'array',

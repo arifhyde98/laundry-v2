@@ -34,7 +34,16 @@ class HandleInertiaRequests extends Middleware
                 'error' => fn () => $request->session()->get('error'),
                 'message' => fn () => $request->session()->get('message'),
             ],
-            'outlet' => fn () => Outlet::first(),
+            'outlet' => fn () => rescue(fn () => Outlet::first([
+                'id',
+                'name',
+                'phone',
+                'address',
+                'receipt_header',
+                'receipt_footer',
+                'receipt_paper_size',
+                'is_wa_enabled',
+            ]), null, false),
             'appName' => config('app.name'),
         ];
     }

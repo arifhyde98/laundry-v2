@@ -5,20 +5,21 @@ namespace App\Http\Controllers\POS;
 use App\Http\Controllers\Controller;
 use App\Models\Customer;
 use App\Models\CustomerDeposit;
-use App\Models\Service;
-use App\Models\Rack;
-use App\Models\Shift;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\OrderPayment;
 use App\Models\OrderTrackingLog;
-use App\Services\WhatsAppService;
+use App\Models\Rack;
+use App\Models\Service;
+use App\Models\Shift;
 use App\Services\ReceiptService;
+use App\Services\WhatsAppService;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
-use Carbon\Carbon;
 
 class PosController extends Controller
 {
@@ -62,7 +63,7 @@ class PosController extends Controller
         $activeShift = Shift::where('user_id', Auth::id())->where('status', 'open')->first();
 
         // Security Policy: Cashier MUST open a shift to process transactions. Owner is flexible.
-        if (Auth::user()->role === 'cashier' && !$activeShift) {
+        if (Auth::user()->role === 'cashier' && ! $activeShift) {
             return back()->with('error', 'Akses Ditolak: Anda wajib "Buka Shift" terlebih dahulu sebelum bisa memproses pesanan.');
         }
 
@@ -77,10 +78,10 @@ class PosController extends Controller
             $maxEstimatedHours = 72; // default 3 days
 
             foreach ($validated['items'] as $item) {
-                $subtotal += (float)$item['quantity'] * (float)$item['unit_price'];
-                $totalWeightQty += (float)$item['quantity'];
+                $subtotal += (float) $item['quantity'] * (float) $item['unit_price'];
+                $totalWeightQty += (float) $item['quantity'];
 
-                if (!empty($item['service_id'])) {
+                if (! empty($item['service_id'])) {
                     $svc = Service::find($item['service_id']);
                     if ($svc && $svc->estimated_hours < $maxEstimatedHours) {
                         $maxEstimatedHours = $svc->estimated_hours;
@@ -88,15 +89,15 @@ class PosController extends Controller
                 }
             }
 
-            $discount = (float)($validated['discount_amount'] ?? 0);
-            $delivery = (float)($validated['delivery_fee'] ?? 0);
+            $discount = (float) ($validated['discount_amount'] ?? 0);
+            $delivery = (float) ($validated['delivery_fee'] ?? 0);
             $grandTotal = max(0, $subtotal - $discount + $delivery);
-            $paidAmount = min($grandTotal, (float)$validated['paid_amount']);
+            $paidAmount = min($grandTotal, (float) $validated['paid_amount']);
 
             // Verify Deposit Payment
             if ($validated['payment_method'] === 'deposit') {
                 if ($customer->deposit_balance < $paidAmount) {
-                    return back()->with('error', 'Saldo deposit pelanggan tidak mencukupi (Tersedia: Rp ' . number_format($customer->deposit_balance, 0, ',', '.') . ').');
+                    return back()->with('error', 'Saldo deposit pelanggan tidak mencukupi (Tersedia: Rp '.number_format($customer->deposit_balance, 0, ',', '.').').');
                 }
                 $customer->decrement('deposit_balance', $paidAmount);
 
@@ -113,7 +114,7 @@ class PosController extends Controller
             // Generate Unique Invoice Code
             $todayPrefix = Carbon::now()->format('Ymd');
             $todayCount = Order::whereDate('created_at', Carbon::today())->count() + 1;
-            $invoiceCode = 'INV-' . $todayPrefix . '-' . str_pad($todayCount, 4, '0', STR_PAD_LEFT);
+            $invoiceCode = 'INV-'.$todayPrefix.'-'.str_pad($todayCount, 4, '0', STR_PAD_LEFT);
 
             // Active Shift
             $activeShift = Shift::where('user_id', Auth::id())->where('status', 'open')->first();
@@ -136,7 +137,7 @@ class PosController extends Controller
                 'order_status' => 'received',
                 'order_date' => Carbon::today(),
                 'estimated_completion' => Carbon::now()->addHours($maxEstimatedHours),
-                'notes' => $validated['notes'],
+                'notes' => $validated['notes'] ?? null,
             ]);
 
             // Create Order Items
@@ -147,7 +148,7 @@ class PosController extends Controller
                     'item_name' => $item['item_name'],
                     'quantity' => $item['quantity'],
                     'unit_price' => $item['unit_price'],
-                    'subtotal' => (float)$item['quantity'] * (float)$item['unit_price'],
+                    'subtotal' => (float) $item['quantity'] * (float) $item['unit_price'],
                 ]);
             }
 
@@ -188,14 +189,14 @@ class PosController extends Controller
             try {
                 $whatsAppService->sendOrderReceivedNotification($order);
             } catch (\Exception $waEx) {
-                \Illuminate\Support\Facades\Log::warning("WA notification failed for order {$order->id}: " . $waEx->getMessage());
+                Log::warning("WA notification failed for order {$order->id}: ".$waEx->getMessage());
             }
 
             return redirect()->route('orders.show', ['id' => $order->id, 'autoprint' => 1])->with('success', "Order {$order->invoice_code} berhasil dibuat!");
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->with('error', 'Gagal memproses transaksi: ' . $e->getMessage());
+
+            return back()->with('error', 'Gagal memproses transaksi: '.$e->getMessage());
         }
     }
 }
-

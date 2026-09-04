@@ -3,8 +3,21 @@
 namespace App\Http\Controllers\Outlet;
 
 use App\Http\Controllers\Controller;
+use App\Models\Customer;
+use App\Models\CustomerDeposit;
+use App\Models\EmployeeCommission;
+use App\Models\Expense;
+use App\Models\InventoryItem;
+use App\Models\Order;
+use App\Models\OrderItem;
+use App\Models\OrderPayment;
+use App\Models\OrderTrackingLog;
 use App\Models\Outlet;
+use App\Models\RewashTicket;
+use App\Models\Shift;
+use App\Models\WhatsappLog;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 
 class OutletController extends Controller
@@ -23,13 +36,13 @@ class OutletController extends Controller
             ]
         );
 
-        $waLogs = \App\Models\WhatsappLog::with('order:id,invoice_code')
+        $waLogs = WhatsappLog::with('order:id,invoice_code')
             ->orderBy('id', 'desc')
             ->take(20)
             ->get();
 
         return Inertia::render('Outlet/Index', [
-            'outlet' => $outlet,
+            'outlet' => $outlet->makeVisible('wa_api_token'),
             'waLogs' => $waLogs,
         ]);
     }
@@ -61,28 +74,28 @@ class OutletController extends Controller
     {
         // Fitur Developer: Reset Transaksi Saja
         try {
-            \Illuminate\Support\Facades\DB::statement('SET FOREIGN_KEY_CHECKS=0;');
-            \App\Models\Order::truncate();
-            \App\Models\OrderItem::truncate();
-            \App\Models\OrderPayment::truncate();
-            \App\Models\OrderTrackingLog::truncate();
-            \App\Models\CustomerDeposit::truncate();
-            \App\Models\Shift::truncate();
-            \App\Models\Expense::truncate();
-            \App\Models\EmployeeCommission::truncate();
-            \App\Models\RewashTicket::truncate();
-            \App\Models\WhatsappLog::truncate();
-            \Illuminate\Support\Facades\DB::statement('SET FOREIGN_KEY_CHECKS=1;');
-            
+            DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+            Order::truncate();
+            OrderItem::truncate();
+            OrderPayment::truncate();
+            OrderTrackingLog::truncate();
+            CustomerDeposit::truncate();
+            Shift::truncate();
+            Expense::truncate();
+            EmployeeCommission::truncate();
+            RewashTicket::truncate();
+            WhatsappLog::truncate();
+            DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+
             // Reset Customer balances & Inventory stock back to 0
-            \App\Models\Customer::query()->update(['deposit_balance' => 0, 'point_balance' => 0]);
-            \App\Models\InventoryItem::query()->update(['stock' => 0]);
-            
+            Customer::query()->update(['deposit_balance' => 0, 'point_balance' => 0]);
+            InventoryItem::query()->update(['stock' => 0]);
+
             return redirect()->route('dashboard')->with('success', 'Berhasil! Seluruh riwayat transaksi & uang kasir telah dihapus bersih. Saldo pelanggan & stok barang dikembalikan ke 0. Sistem sudah kembali seperti toko baru buka (Fresh).');
         } catch (\Exception $e) {
-            \Illuminate\Support\Facades\DB::statement('SET FOREIGN_KEY_CHECKS=1;');
-            return back()->with('error', 'Gagal mereset data: ' . $e->getMessage());
+            DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+
+            return back()->with('error', 'Gagal mereset data: '.$e->getMessage());
         }
     }
 }
-

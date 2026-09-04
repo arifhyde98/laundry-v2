@@ -6,11 +6,10 @@ use App\Models\Order;
 use App\Models\OrderPayment;
 use App\Models\OrderTrackingLog;
 use App\Models\PaymentGateway;
-use App\Services\WhatsAppService;
+use Exception;
 use Illuminate\Support\Facades\Log;
 use Midtrans\Config;
 use Midtrans\Snap;
-use Exception;
 
 class PaymentGatewayService
 {
@@ -31,7 +30,7 @@ class PaymentGatewayService
      */
     protected function configureMidtrans(): void
     {
-        if (!$this->activeGateway || $this->activeGateway->name !== 'midtrans') {
+        if (! $this->activeGateway || $this->activeGateway->name !== 'midtrans') {
             throw new Exception('Payment Gateway Midtrans belum diaktifkan.');
         }
 
@@ -52,14 +51,19 @@ class PaymentGatewayService
     {
         $this->configureMidtrans();
 
-        $payAmount = $amount ?? ($order->grand_total - $order->paid_amount);
-        if ($payAmount <= 0) {
+        $remaining = max(0, (float) $order->grand_total - (float) $order->paid_amount);
+        if ($remaining <= 0) {
             throw new Exception('Tagihan order ini sudah lunas.');
+        }
+
+        $payAmount = $amount !== null ? min($remaining, (float) $amount) : $remaining;
+        if ($payAmount <= 0) {
+            throw new Exception('Nominal pembayaran tidak valid.');
         }
 
         // Midtrans butuh ID transaksi yang unik setiap request.
         // Format: INV-20260831-0001-T1693456789
-        $midtransTxId = $order->invoice_code . '-T' . time();
+        $midtransTxId = $order->invoice_code.'-T'.time();
 
         $params = [
             'transaction_details' => [
@@ -76,7 +80,7 @@ class PaymentGatewayService
                     'price' => (int) round($payAmount),
                     'quantity' => 1,
                     'name' => "Pembayaran Laundry {$order->invoice_code}",
-                ]
+                ],
             ],
             'custom_field1' => (string) $order->id, // Menyimpan ID order database
         ];
@@ -97,8 +101,9 @@ class PaymentGatewayService
      */
     public function processWebhook(array $payload, WhatsAppService $whatsAppService): bool
     {
-        if (!$this->activeGateway || empty($this->activeGateway->server_key)) {
+        if (! $this->activeGateway || empty($this->activeGateway->server_key)) {
             Log::error('Webhook Payment Failed: Gateway not active or server key missing.');
+
             return false;
         }
 
@@ -110,17 +115,19 @@ class PaymentGatewayService
         $fraudStatus = $payload['fraud_status'] ?? null;
         $paymentType = $payload['payment_type'] ?? 'qris';
 
-        if (!$orderIdStr || !$statusCode || !$grossAmount || !$signatureKey) {
-            Log::error('Webhook Payment Invalid Payload: ' . json_encode($payload));
+        if (! $orderIdStr || ! $statusCode || ! $grossAmount || ! $signatureKey) {
+            Log::error('Webhook Payment Invalid Payload: '.json_encode($payload));
+
             return false;
         }
 
         // Verifikasi Signature HASH
         $serverKey = $this->activeGateway->server_key;
-        $expectedSignature = hash("sha512", $orderIdStr . $statusCode . $grossAmount . $serverKey);
+        $expectedSignature = hash('sha512', $orderIdStr.$statusCode.$grossAmount.$serverKey);
 
         if ($signatureKey !== $expectedSignature) {
             Log::error("Webhook Payment Signature Mismatch for Order: {$orderIdStr}");
+
             return false;
         }
 
@@ -132,15 +139,16 @@ class PaymentGatewayService
             $order = Order::find($dbOrderId);
         }
 
-        if (!$order) {
+        if (! $order) {
             // Extrak invoice code misal INV-20260831-0001 dari INV-20260831-0001-T123456
             $parts = explode('-T', $orderIdStr);
             $invoiceCode = $parts[0];
             $order = Order::where('invoice_code', $invoiceCode)->first();
         }
 
-        if (!$order) {
+        if (! $order) {
             Log::error("Webhook Payment Order Not Found: {$orderIdStr}");
+
             return false;
         }
 
@@ -163,7 +171,7 @@ class PaymentGatewayService
             // Hindari duplikasi jika callback dikirim ulang oleh Midtrans
             $existingPayment = OrderPayment::where('gateway_transaction_id', $orderIdStr)->first();
 
-            if (!$existingPayment) {
+            if (! $existingPayment) {
                 $paymentRecord = OrderPayment::create([
                     'order_id' => $order->id,
                     'shift_id' => null,
@@ -190,14 +198,14 @@ class PaymentGatewayService
                     'order_id' => $order->id,
                     'changed_by' => null,
                     'status_to' => $order->order_status,
-                    'notes' => "Pembayaran Online Midtrans berhasil diselesaikan (Rp " . number_format($paidFloat, 0, ',', '.') . ").",
+                    'notes' => 'Pembayaran Online Midtrans berhasil diselesaikan (Rp '.number_format($paidFloat, 0, ',', '.').').',
                 ]);
 
                 // Kirim Notifikasi WA jika diaktifkan
                 try {
                     $whatsAppService->sendPaymentReceivedNotification($paymentRecord);
-                } catch (\Exception $waEx) {
-                    Log::warning("WA Notification Callback Error: " . $waEx->getMessage());
+                } catch (Exception $waEx) {
+                    Log::warning('WA Notification Callback Error: '.$waEx->getMessage());
                 }
             }
 
